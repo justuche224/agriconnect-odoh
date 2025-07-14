@@ -13,7 +13,7 @@ export default function SignInForm({
 }: {
   onSwitchToSignUp: () => void;
 }) {
-  const router = useRouter()
+  const router = useRouter();
   const { isPending } = authClient.useSession();
 
   const form = useForm({
@@ -29,13 +29,13 @@ export default function SignInForm({
         },
         {
           onSuccess: () => {
-            router.push("/dashboard")
+            router.push("/dashboard");
             toast.success("Sign in successful");
           },
           onError: (error) => {
             toast.error(error.error.message);
           },
-        },
+        }
       );
     },
     validators: {
@@ -51,7 +51,7 @@ export default function SignInForm({
   }
 
   return (
-    <div className="mx-auto w-full mt-10 max-w-md p-6">
+    <div className="mx-auto w-full max-w-md p-6">
       <h1 className="mb-6 text-center text-3xl font-bold">Welcome Back</h1>
 
       <form
@@ -60,7 +60,7 @@ export default function SignInForm({
           e.stopPropagation();
           void form.handleSubmit();
         }}
-        className="space-y-4"
+        className="space-y-4 bg-background/50 backdrop-blur-lg p-5 rounded-lg shadow-2xl"
       >
         <div>
           <form.Field name="email">
@@ -74,6 +74,7 @@ export default function SignInForm({
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="john@doe.com"
                 />
                 {field.state.meta.errors.map((error) => (
                   <p key={error?.message} className="text-red-500">
@@ -97,6 +98,7 @@ export default function SignInForm({
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="********"
                 />
                 {field.state.meta.errors.map((error) => (
                   <p key={error?.message} className="text-red-500">
@@ -125,7 +127,7 @@ export default function SignInForm({
         <Button
           variant="link"
           onClick={onSwitchToSignUp}
-          className="text-indigo-600 hover:text-indigo-800"
+          className="text-primary hover:text-primary/80"
         >
           Need an account? Sign Up
         </Button>
