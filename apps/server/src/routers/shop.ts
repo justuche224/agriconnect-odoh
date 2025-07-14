@@ -698,8 +698,8 @@ export const shopRouter = {
         };
       });
 
-      const tax = subtotal * 0.1; // 10% tax
-      const shipping = subtotal > 100 ? 0 : 10; // Free shipping over $100
+      const tax = subtotal * 0.1;
+      const shipping = subtotal > 100 ? 0 : 10;
       const total = subtotal + tax + shipping;
 
       // Create order
@@ -795,6 +795,55 @@ export const shopRouter = {
         ...order,
         items,
       };
+    }),
+
+  getSellerOrders: protectedProcedure
+    .input(
+      z.object({
+        page: z.number().default(1),
+        limit: z.number().max(50).default(10),
+      })
+    )
+    .handler(async ({ input, context }) => {
+      const offset = (input.page - 1) * input.limit;
+
+      const orderItemsData = await db
+        .select({
+          id: orderItems.id,
+          orderId: orderItems.orderId,
+          quantity: orderItems.quantity,
+          price: orderItems.price,
+          total: orderItems.total,
+          variant: orderItems.variant,
+          createdAt: orderItems.createdAt,
+          product: {
+            id: products.id,
+            name: products.name,
+          },
+          order: {
+            id: orders.id,
+            status: orders.status,
+            paymentStatus: orders.paymentStatus,
+            shippingAddress: orders.shippingAddress,
+            notes: orders.notes,
+            createdAt: orders.createdAt,
+          },
+          customer: {
+            id: sql`"user"."id"`,
+            name: sql`"user"."name"`,
+            email: sql`"user"."email"`,
+          },
+        })
+        .from(orderItems)
+        .leftJoin(products, eq(orderItems.productId, products.id))
+        .leftJoin(orders, eq(orderItems.orderId, orders.id))
+        .leftJoin(sql`"user"`, eq(orders.customerId, sql`"user"."id"`))
+        .where(eq(orderItems.sellerId, context.session.user.id))
+        .orderBy(desc(orderItems.createdAt))
+        .limit(input.limit)
+        .offset(offset);
+
+      return orderItemsData;
     }),
 
   // Farmer Profile

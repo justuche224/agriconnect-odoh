@@ -14,128 +14,104 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Grid3X3, List, Star, ArrowUpDown, Heart } from "lucide-react";
+import {
+  Grid3X3,
+  List,
+  Star,
+  ArrowUpDown,
+  Heart,
+  Loader,
+  ShoppingCart,
+} from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import Search from "@/components/search";
+import { useQuery } from "@tanstack/react-query";
+import { orpc } from "@/utils/orpc";
+import type { Product, Category } from "@/types";
+import formatPrice from "@/lib/format-price";
+import { useCartStore } from "@/lib/store/cart";
+import { toast } from "sonner";
 
-// Mock product data
-const products = [
-  {
-    id: 1,
-    name: "Wireless Bluetooth Headphones",
-    description:
-      "Premium quality wireless headphones with noise cancellation technology and 30-hour battery life. Perfect for music lovers and professionals.",
-    price: 199.99,
-    originalPrice: 249.99,
-    rating: 4.5,
-    reviews: 128,
-    image: "/placeholder.svg?height=300&width=300",
-    category: "Electronics",
-    inStock: true,
-    badge: "Best Seller",
-  },
-  {
-    id: 2,
-    name: "Smart Fitness Watch",
-    description:
-      "Advanced fitness tracking with heart rate monitor, GPS, and waterproof design. Track your workouts and health metrics.",
-    price: 299.99,
-    originalPrice: null,
-    rating: 4.3,
-    reviews: 89,
-    image: "/placeholder.svg?height=300&width=300",
-    category: "Wearables",
-    inStock: true,
-    badge: "New",
-  },
-  {
-    id: 3,
-    name: "Organic Cotton T-Shirt",
-    description:
-      "Comfortable and sustainable organic cotton t-shirt available in multiple colors. Eco-friendly and ethically made.",
-    price: 29.99,
-    originalPrice: 39.99,
-    rating: 4.7,
-    reviews: 256,
-    image: "/placeholder.svg?height=300&width=300",
-    category: "Clothing",
-    inStock: true,
-    badge: null,
-  },
-  {
-    id: 4,
-    name: "Professional Camera Lens",
-    description:
-      "High-quality 50mm prime lens for professional photography. Sharp images with beautiful bokeh effect.",
-    price: 899.99,
-    originalPrice: null,
-    rating: 4.8,
-    reviews: 45,
-    image: "/placeholder.svg?height=300&width=300",
-    category: "Photography",
-    inStock: false,
-    badge: null,
-  },
-  {
-    id: 5,
-    name: "Ergonomic Office Chair",
-    description:
-      "Comfortable ergonomic office chair with lumbar support and adjustable height. Perfect for long working hours.",
-    price: 449.99,
-    originalPrice: 599.99,
-    rating: 4.4,
-    reviews: 167,
-    image: "/placeholder.svg?height=300&width=300",
-    category: "Furniture",
-    inStock: true,
-    badge: "Sale",
-  },
-  {
-    id: 6,
-    name: "Stainless Steel Water Bottle",
-    description:
-      "Insulated stainless steel water bottle that keeps drinks cold for 24 hours or hot for 12 hours. BPA-free and eco-friendly.",
-    price: 34.99,
-    originalPrice: null,
-    rating: 4.6,
-    reviews: 203,
-    image: "/placeholder.svg?height=300&width=300",
-    category: "Lifestyle",
-    inStock: true,
-    badge: null,
-  },
-];
-
-const categories = [
-  "Electronics",
-  "Wearables",
-  "Clothing",
-  "Photography",
-  "Furniture",
-  "Lifestyle",
-];
 const priceRanges = [
-  { label: "Under $50", min: 0, max: 50 },
-  { label: "$50 - $100", min: 50, max: 100 },
-  { label: "$100 - $300", min: 100, max: 300 },
-  { label: "$300 - $500", min: 300, max: 500 },
-  { label: "Over $500", min: 500, max: Number.POSITIVE_INFINITY },
+  { label: "Under NGN 5,000", min: 0, max: 5000 },
+  { label: "NGN 5,000 - NGN 10,000", min: 5000, max: 10000 },
+  { label: "NGN 10,000 - NGN 15,000", min: 10000, max: 15000 },
+  { label: "NGN 15,000 - NGN 20,000", min: 15000, max: 20000 },
+  { label: "Over NGN 20,000", min: 20000, max: 1000000 },
 ];
 
-export default function Home() {
+export default function ShopPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("featured");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedPriceRange, setSelectedPriceRange] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [addingToCart, setAddingToCart] = useState<string | null>(null);
+
+  const addItem = useCartStore((state) => state.addItem);
+
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => await orpc.shop.getCategories.call(),
+  });
+
+  const { data: productsData, isLoading: productsLoading } = useQuery({
+    queryKey: [
+      "products",
+      currentPage,
+      sortBy,
+      selectedCategories,
+      searchQuery,
+    ],
+    queryFn: async () => {
+      const response = await orpc.shop.getProducts.call({
+        page: currentPage,
+        limit: 12,
+        search: searchQuery || undefined,
+        categoryId: selectedCategories[0] || undefined,
+        sortBy: sortBy as any,
+      });
+      return response;
+    },
+  });
+
+  const products = productsData?.items || [];
+
+  const handleAddToCart = async (product: Product) => {
+    setAddingToCart(product.id);
+
+    try {
+      const cartItem = {
+        id: product.id,
+        name: product.name,
+        price: Number(product.price),
+        quantity: 1,
+        image: product.images?.[0]?.url || "/placeholder.svg",
+        trackQuantity: true,
+        inStock: product.quantity,
+        productSlug: product.id,
+      };
+
+      addItem(cartItem);
+      toast.success(`Added ${product.name} to cart!`);
+    } catch (error) {
+      toast.error("Failed to add item to cart");
+    } finally {
+      setAddingToCart(null);
+    }
+  };
 
   const renderStars = (rating: number) => {
+    const numRating = Number(rating) || 0;
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
         className={`w-4 h-4 ${
-          i < Math.floor(rating)
+          i < Math.floor(numRating)
             ? "fill-yellow-400 text-yellow-400"
-            : i < rating
+            : i < numRating
             ? "fill-yellow-400/50 text-yellow-400"
             : "text-gray-300"
         }`}
@@ -153,46 +129,55 @@ export default function Home() {
     product,
     isListView,
   }: {
-    product: (typeof products)[0];
+    product: Product;
     isListView: boolean;
   }) => (
     <Card
-      className={`group cursor-pointer hover:shadow-lg transition-shadow ${
+      className={`group hover:shadow-lg transition-shadow ${
         isListView ? "flex flex-row" : ""
       }`}
     >
-      <div
-        className={`relative ${
-          isListView ? "w-48 flex-shrink-0" : "aspect-square"
-        } overflow-hidden ${isListView ? "rounded-l-lg" : "rounded-t-lg"}`}
+      <Link
+        href={`/shop/product/${product.id}`}
+        className={isListView ? "w-48 flex-shrink-0" : ""}
       >
-        <Image
-          src={product.image || "/placeholder.svg"}
-          alt={product.name}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        {product.badge && (
-          <Badge
-            className="absolute top-2 left-2 z-10"
-            variant={product.badge === "Sale" ? "destructive" : "default"}
-          >
-            {product.badge}
-          </Badge>
-        )}
-        <Button
-          size="icon"
-          variant="ghost"
-          className="absolute top-2 right-2 z-10 bg-white/80 hover:bg-white"
+        <div
+          className={`relative ${
+            isListView ? "w-48 flex-shrink-0" : "aspect-square"
+          } overflow-hidden ${isListView ? "rounded-l-lg" : "rounded-t-lg"}`}
         >
-          <Heart className="w-4 h-4" />
-        </Button>
-        {!product.inStock && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <Badge variant="secondary">Out of Stock</Badge>
-          </div>
-        )}
-      </div>
+          <Image
+            src={product.images?.[0]?.url || "/placeholder.svg"}
+            alt={product.name}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          {product.badge && (
+            <Badge
+              className="absolute top-2 left-2 z-10"
+              variant={product.badge === "Sale" ? "destructive" : "default"}
+            >
+              {product.badge}
+            </Badge>
+          )}
+          <Button
+            size="icon"
+            variant="ghost"
+            className="absolute top-2 right-2 z-10 bg-white/80 hover:bg-white"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <Heart className="w-4 h-4" />
+          </Button>
+          {!product.inStock && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <Badge variant="secondary">Out of Stock</Badge>
+            </div>
+          )}
+        </div>
+      </Link>
 
       <CardContent
         className={`p-4 ${
@@ -200,28 +185,30 @@ export default function Home() {
         }`}
       >
         <div>
-          <h3
-            className={`font-semibold ${
-              isListView ? "text-lg" : "text-base"
-            } mb-2 line-clamp-2`}
-          >
-            {product.name}
-          </h3>
+          <Link href={`/shop/product/${product.id}`}>
+            <h3
+              className={`font-semibold ${
+                isListView ? "text-lg" : "text-base"
+              } mb-2 line-clamp-2 hover:text-primary cursor-pointer`}
+            >
+              {product.name}
+            </h3>
 
-          <p
-            className={`text-muted-foreground text-sm mb-3 ${
-              isListView ? "line-clamp-3" : "line-clamp-2"
-            }`}
-          >
-            {truncateDescription(product.description, isListView ? 150 : 100)}
-          </p>
+            <p
+              className={`text-muted-foreground text-sm mb-3 ${
+                isListView ? "line-clamp-3" : "line-clamp-2"
+              }`}
+            >
+              {truncateDescription(product.description, isListView ? 150 : 100)}
+            </p>
 
-          <div className="flex items-center gap-1 mb-3">
-            {renderStars(product.rating)}
-            <span className="text-sm text-muted-foreground ml-1">
-              {product.rating} ({product.reviews})
-            </span>
-          </div>
+            <div className="flex items-center gap-1 mb-3">
+              {renderStars(Number(product.rating))}
+              <span className="text-sm text-muted-foreground ml-1">
+                {product.rating} ({product.reviewCount || 0})
+              </span>
+            </div>
+          </Link>
         </div>
 
         <div
@@ -230,28 +217,57 @@ export default function Home() {
           }`}
         >
           <div className="flex items-center gap-2">
-            <span className="font-bold text-lg">${product.price}</span>
+            <span className="font-bold text-lg">
+              {formatPrice(Number(product.price))}
+            </span>
             {product.originalPrice && (
               <span className="text-sm text-muted-foreground line-through">
-                ${product.originalPrice}
+                {formatPrice(Number(product.originalPrice))}
               </span>
             )}
           </div>
 
           <Button
             size={isListView ? "default" : "sm"}
-            disabled={!product.inStock}
+            disabled={!product.inStock || addingToCart === product.id}
             className={isListView ? "" : "text-xs"}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (product.inStock) {
+                handleAddToCart(product);
+              }
+            }}
           >
-            {product.inStock ? "Add to Cart" : "Out of Stock"}
+            {addingToCart === product.id ? (
+              <>
+                <Loader className="w-3 h-3 mr-1 animate-spin" />
+                Adding...
+              </>
+            ) : product.inStock ? (
+              <>
+                <ShoppingCart className="w-3 h-3 mr-1" />
+                Add to Cart
+              </>
+            ) : (
+              "Out of Stock"
+            )}
           </Button>
         </div>
       </CardContent>
     </Card>
   );
 
+  if (categoriesLoading || productsLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader className="animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <section className="flex flex-col pt-10">
+    <section className="flex flex-col py-10">
       <section
         suppressHydrationWarning
         className="bg-background/50 relative overflow-hidden pt-6 sm:pt-10 rounded-br-2xl rounded-bl-2xl sm:rounded-br-4xl sm:rounded-bl-4xl"
@@ -266,49 +282,43 @@ export default function Home() {
 
       <section className="flex flex-col items-center justify-center mt-6 sm:mt-10">
         <h2 className="text-lg sm:text-xl font-semibold tracking-tight mb-4">
-          Top Categories
+          Farm Products Marketplace
         </h2>
       </section>
 
       <section className="mt-10 px-4 max-w-7xl mx-auto">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Filters Sidebar */}
           <div className="w-full lg:w-1/4 space-y-6">
             <div>
               <h3 className="text-lg font-semibold tracking-tight mb-4">
                 Filters
               </h3>
               <div className="flex lg:flex-col gap-4">
-                {/* Categories */}
                 <div className="space-y-4">
                   <h4 className="font-medium">Categories</h4>
                   <div className="space-y-2">
-                    {categories.map((category) => (
+                    {categories.map((category: Category) => (
                       <div
-                        key={category}
+                        key={category.id}
                         className="flex items-center space-x-2"
                       >
                         <Checkbox
-                          id={category}
-                          checked={selectedCategories.includes(category)}
+                          id={category.id}
+                          checked={selectedCategories.includes(category.id)}
                           onCheckedChange={(checked) => {
                             if (checked) {
-                              setSelectedCategories([
-                                ...selectedCategories,
-                                category,
-                              ]);
+                              setSelectedCategories([category.id]);
                             } else {
-                              setSelectedCategories(
-                                selectedCategories.filter((c) => c !== category)
-                              );
+                              setSelectedCategories([]);
                             }
+                            setCurrentPage(1);
                           }}
                         />
                         <Label
-                          htmlFor={category}
+                          htmlFor={category.id}
                           className="text-sm font-normal"
                         >
-                          {category}
+                          {category.name}
                         </Label>
                       </div>
                     ))}
@@ -317,7 +327,6 @@ export default function Home() {
 
                 <Separator className="hidden lg:block" />
 
-                {/* Price Range */}
                 <div className="space-y-4">
                   <h4 className="font-medium">Price Range</h4>
                   <div className="space-y-2">
@@ -331,17 +340,11 @@ export default function Home() {
                           checked={selectedPriceRange.includes(range.label)}
                           onCheckedChange={(checked) => {
                             if (checked) {
-                              setSelectedPriceRange([
-                                ...selectedPriceRange,
-                                range.label,
-                              ]);
+                              setSelectedPriceRange([range.label]);
                             } else {
-                              setSelectedPriceRange(
-                                selectedPriceRange.filter(
-                                  (p) => p !== range.label
-                                )
-                              );
+                              setSelectedPriceRange([]);
                             }
+                            setCurrentPage(1);
                           }}
                         />
                         <Label
@@ -358,9 +361,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Products Section */}
           <div className="w-full lg:w-3/4">
-            {/* Header with view toggle and sort */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div>
                 <h2 className="text-lg sm:text-xl font-semibold tracking-tight">
@@ -372,7 +373,6 @@ export default function Home() {
               </div>
 
               <div className="flex items-center gap-2">
-                {/* Sort Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">
@@ -383,7 +383,10 @@ export default function Home() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuRadioGroup
                       value={sortBy}
-                      onValueChange={setSortBy}
+                      onValueChange={(value) => {
+                        setSortBy(value);
+                        setCurrentPage(1);
+                      }}
                     >
                       <DropdownMenuRadioItem value="featured">
                         Featured
@@ -404,7 +407,6 @@ export default function Home() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* View Toggle */}
                 <div className="flex border rounded-md">
                   <Button
                     variant={viewMode === "grid" ? "default" : "ghost"}
@@ -426,7 +428,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Products Grid/List */}
             <div
               className={
                 viewMode === "grid"
@@ -442,6 +443,23 @@ export default function Home() {
                 />
               ))}
             </div>
+
+            {products.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No products found</p>
+              </div>
+            )}
+
+            {productsData?.pagination?.hasMore && (
+              <div className="flex justify-center mt-8">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage((prev) => prev + 1)}
+                >
+                  Load More
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </section>

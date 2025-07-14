@@ -67,7 +67,8 @@
     "uploadthing": "^7.7.3",
     "uuid": "^11.1.0",
     "vaul": "^1.1.2",
-    "zod": "^4.0.5"
+    "zod": "^4.0.5",
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.10",

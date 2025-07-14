@@ -26,132 +26,91 @@ import {
   RotateCcw,
   ChevronLeft,
   ChevronRight,
+  Loader,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-
-// Mock product data
-const product = {
-  id: 1,
-  name: "Premium Wireless Bluetooth Headphones",
-  description: `Experience exceptional sound quality with these premium wireless Bluetooth headphones. 
-  Featuring advanced noise cancellation technology, these headphones deliver crystal-clear audio 
-  whether you're listening to music, taking calls, or enjoying podcasts.
-
-  The ergonomic design ensures comfortable wear for extended periods, while the premium materials 
-  provide durability and style. With up to 30 hours of battery life and quick charge capability, 
-  these headphones are perfect for daily use, travel, and professional applications.
-
-  Key features include:
-  • Advanced Active Noise Cancellation (ANC)
-  • High-resolution audio drivers
-  • Comfortable over-ear design
-  • 30-hour battery life
-  • Quick charge: 15 minutes = 3 hours playback
-  • Multi-device connectivity
-  • Built-in voice assistant support
-  • Foldable design for easy storage`,
-  price: 199.99,
-  originalPrice: 249.99,
-  rating: 4.5,
-  reviewCount: 128,
-  inStock: true,
-  stockCount: 15,
-  images: [
-    "/placeholder.svg?height=600&width=600",
-    "/placeholder.svg?height=600&width=600",
-    "/placeholder.svg?height=600&width=600",
-    "/placeholder.svg?height=600&width=600",
-    "/placeholder.svg?height=600&width=600",
-  ],
-  colors: [
-    { name: "Midnight Black", value: "black", available: true },
-    { name: "Pearl White", value: "white", available: true },
-    { name: "Rose Gold", value: "rose-gold", available: false },
-  ],
-  sizes: ["One Size"],
-  category: "Electronics",
-  brand: "AudioTech",
-  sku: "AT-WH-001",
-  weight: "280g",
-  dimensions: "19 x 17 x 8 cm",
-};
-
-const reviews = [
-  {
-    id: 1,
-    user: "Sarah Johnson",
-    avatar: "/placeholder.svg?height=40&width=40",
-    rating: 5,
-    date: "2024-01-15",
-    title: "Excellent sound quality!",
-    content:
-      "These headphones exceeded my expectations. The noise cancellation is fantastic and the battery life is exactly as advertised. Very comfortable for long listening sessions.",
-    helpful: 12,
-    verified: true,
-  },
-  {
-    id: 2,
-    user: "Mike Chen",
-    avatar: "/placeholder.svg?height=40&width=40",
-    rating: 4,
-    date: "2024-01-10",
-    title: "Great value for money",
-    content:
-      "Really impressed with the build quality and sound. The only minor issue is that they can get a bit warm during extended use, but overall very satisfied.",
-    helpful: 8,
-    verified: true,
-  },
-  {
-    id: 3,
-    user: "Emily Davis",
-    avatar: "/placeholder.svg?height=40&width=40",
-    rating: 5,
-    date: "2024-01-08",
-    title: "Perfect for work from home",
-    content:
-      "The noise cancellation is a game-changer for video calls. Crystal clear audio and the microphone quality is excellent. Highly recommend for remote work.",
-    helpful: 15,
-    verified: true,
-  },
-  {
-    id: 4,
-    user: "Alex Rodriguez",
-    avatar: "/placeholder.svg?height=40&width=40",
-    rating: 4,
-    date: "2024-01-05",
-    title: "Comfortable and stylish",
-    content:
-      "Love the design and they're very comfortable. Sound quality is great for the price point. Quick charging feature is very convenient.",
-    helpful: 6,
-    verified: false,
-  },
-];
-
-const ratingDistribution = [
-  { stars: 5, count: 64, percentage: 50 },
-  { stars: 4, count: 38, percentage: 30 },
-  { stars: 3, count: 19, percentage: 15 },
-  { stars: 2, count: 5, percentage: 4 },
-  { stars: 1, count: 2, percentage: 1 },
-];
+import { useQuery } from "@tanstack/react-query";
+import { orpc } from "@/utils/orpc";
+import formatPrice from "@/lib/format-price";
+import { useParams } from "next/navigation";
+import { useCartStore } from "@/lib/store/cart";
+import { toast } from "sonner";
 
 export default function ProductPage() {
+  const params = useParams();
+  const productId = params.id as string;
+
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedColor, setSelectedColor] = useState(product.colors[0].value);
-  const [selectedSize, setSelectedSize] = useState(product.sizes[0]);
+  const [selectedVariant, setSelectedVariant] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+
+  const addItem = useCartStore((state) => state.addItem);
+
+  const {
+    data: product,
+    isLoading: productLoading,
+    error,
+  } = useQuery({
+    queryKey: ["product", productId],
+    queryFn: async () => {
+      const response = await orpc.shop.getProduct.call({ id: productId });
+      return response;
+    },
+    enabled: !!productId,
+  });
+
+  const { data: reviews = [], isLoading: reviewsLoading } = useQuery({
+    queryKey: ["product-reviews", productId],
+    queryFn: async () => {
+      const response = await orpc.shop.getProductReviews.call({
+        productId,
+        page: 1,
+        limit: 10,
+      });
+      return response;
+    },
+    enabled: !!productId,
+  });
+
+  const handleAddToCart = () => {
+    if (!product) return;
+
+    setIsAddingToCart(true);
+
+    try {
+      const cartItem = {
+        id: product.id,
+        name: product.name,
+        price: Number(product.price),
+        quantity: quantity,
+        image: product.images?.[0]?.url || "/placeholder.svg",
+        trackQuantity: true,
+        inStock: product.quantity,
+        productSlug: product.id,
+      };
+
+      addItem(cartItem);
+      toast.success(`Added ${product.name} to cart!`);
+    } catch (error) {
+      toast.error("Failed to add item to cart");
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
 
   const renderStars = (rating: number, size: "sm" | "md" = "sm") => {
+    const numRating = Number(rating) || 0;
     const starSize = size === "sm" ? "w-4 h-4" : "w-5 h-5";
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
         className={`${starSize} ${
-          i < Math.floor(rating)
+          i < Math.floor(numRating)
             ? "fill-yellow-400 text-yellow-400"
-            : i < rating
+            : i < numRating
             ? "fill-yellow-400/50 text-yellow-400"
             : "text-gray-300"
         }`}
@@ -160,160 +119,210 @@ export default function ProductPage() {
   };
 
   const nextImage = () => {
-    setSelectedImage((prev) => (prev + 1) % product.images.length);
+    if (product?.images) {
+      setSelectedImage((prev) => (prev + 1) % product.images.length);
+    }
   };
 
   const prevImage = () => {
-    setSelectedImage(
-      (prev) => (prev - 1 + product.images.length) % product.images.length
-    );
+    if (product?.images) {
+      setSelectedImage(
+        (prev) => (prev - 1 + product.images.length) % product.images.length
+      );
+    }
   };
 
+  if (productLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader className="animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <h1 className="text-2xl font-bold mb-4">Product Not Found</h1>
+        <p className="text-muted-foreground mb-4">
+          Sorry, the product you're looking for doesn't exist.
+        </p>
+        <Button asChild>
+          <Link href="/shop">Back to Shop</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const ratingDistribution = [
+    {
+      stars: 5,
+      count: Math.floor((product.reviewCount || 0) * 0.5),
+      percentage: 50,
+    },
+    {
+      stars: 4,
+      count: Math.floor((product.reviewCount || 0) * 0.3),
+      percentage: 30,
+    },
+    {
+      stars: 3,
+      count: Math.floor((product.reviewCount || 0) * 0.15),
+      percentage: 15,
+    },
+    {
+      stars: 2,
+      count: Math.floor((product.reviewCount || 0) * 0.04),
+      percentage: 4,
+    },
+    {
+      stars: 1,
+      count: Math.floor((product.reviewCount || 0) * 0.01),
+      percentage: 1,
+    },
+  ];
+
   return (
-    <div className="container mx-auto px-4 py-8 max-md:pt-20">
-      {/* Breadcrumb */}
+    <div className="container mx-auto px-4 py-8 pt-20">
       <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-8">
         <Link href="/" className="hover:text-foreground">
           Home
         </Link>
         <span>/</span>
-        <Link href="/products" className="hover:text-foreground">
-          Products
+        <Link href="/shop" className="hover:text-foreground">
+          Shop
         </Link>
         <span>/</span>
         <span className="text-foreground">{product.name}</span>
       </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-        {/* Image Gallery */}
         <div className="space-y-4">
-          {/* Main Image */}
           <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
             <Image
-              src={product.images[selectedImage] || "/placeholder.svg"}
+              src={product.images?.[selectedImage]?.url || "/placeholder.svg"}
               alt={product.name}
               fill
               className="object-cover"
             />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white"
-              onClick={prevImage}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white"
-              onClick={nextImage}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
+            {product.images && product.images.length > 1 && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white"
+                  onClick={prevImage}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white"
+                  onClick={nextImage}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </>
+            )}
           </div>
 
-          {/* Thumbnail Images */}
-          <div className="flex space-x-2 overflow-x-auto">
-            {product.images.map((image, index) => (
-              <button
-                key={index}
-                onClick={() => setSelectedImage(index)}
-                className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 ${
-                  selectedImage === index ? "border-primary" : "border-gray-200"
-                }`}
-              >
-                <Image
-                  src={image || "/placeholder.svg"}
-                  alt={`${product.name} ${index + 1}`}
-                  width={80}
-                  height={80}
-                  className="object-cover w-full h-full"
-                />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Product Information */}
-        <div className="space-y-6">
-          {/* Header */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Badge variant="secondary">{product.category}</Badge>
-              <Badge variant="outline">{product.brand}</Badge>
-            </div>
-            <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
-
-            {/* Rating */}
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex items-center">
-                {renderStars(product.rating)}
-              </div>
-              <span className="text-sm text-muted-foreground">
-                {product.rating} ({product.reviewCount} reviews)
-              </span>
-            </div>
-
-            {/* Price */}
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-3xl font-bold">${product.price}</span>
-              {product.originalPrice && (
-                <span className="text-xl text-muted-foreground line-through">
-                  ${product.originalPrice}
-                </span>
-              )}
-              {product.originalPrice && (
-                <Badge variant="destructive">
-                  Save ${(product.originalPrice - product.price).toFixed(2)}
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          {/* Color Selection */}
-          <div>
-            <h3 className="font-medium mb-3">Color</h3>
-            <div className="flex gap-2">
-              {product.colors.map((color) => (
+          {product.images && product.images.length > 1 && (
+            <div className="flex space-x-2 overflow-x-auto">
+              {product.images.map((image, index) => (
                 <button
-                  key={color.value}
-                  onClick={() =>
-                    color.available && setSelectedColor(color.value)
-                  }
-                  disabled={!color.available}
-                  className={`px-4 py-2 rounded-md border text-sm ${
-                    selectedColor === color.value
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : color.available
-                      ? "border-gray-300 hover:border-gray-400"
-                      : "border-gray-200 text-gray-400 cursor-not-allowed"
+                  key={index}
+                  onClick={() => setSelectedImage(index)}
+                  className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 ${
+                    selectedImage === index
+                      ? "border-primary"
+                      : "border-gray-200"
                   }`}
                 >
-                  {color.name}
+                  <Image
+                    src={image.url || "/placeholder.svg"}
+                    alt={`${product.name} ${index + 1}`}
+                    width={80}
+                    height={80}
+                    className="object-cover w-full h-full"
+                  />
                 </button>
               ))}
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Size Selection */}
+        <div className="space-y-6">
           <div>
-            <h3 className="font-medium mb-3">Size</h3>
-            <Select value={selectedSize} onValueChange={setSelectedSize}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {product.sizes.map((size) => (
-                  <SelectItem key={size} value={size}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge variant="secondary">{product.category?.name}</Badge>
+              {product.brand && (
+                <Badge variant="outline">{product.brand}</Badge>
+              )}
+              {product.badge && (
+                <Badge
+                  variant={product.badge === "Sale" ? "destructive" : "default"}
+                >
+                  {product.badge}
+                </Badge>
+              )}
+            </div>
+            <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
+
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center">
+                {renderStars(Number(product.rating))}
+              </div>
+              <span className="text-sm text-muted-foreground">
+                {product.rating} ({product.reviewCount || 0} reviews)
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3 mb-6">
+              <span className="text-3xl font-bold">
+                {formatPrice(Number(product.price))}
+              </span>
+              {product.originalPrice && (
+                <>
+                  <span className="text-xl text-muted-foreground line-through">
+                    {formatPrice(Number(product.originalPrice))}
+                  </span>
+                  <Badge variant="destructive">
+                    Save{" "}
+                    {formatPrice(
+                      Number(product.originalPrice) - Number(product.price)
+                    )}
+                  </Badge>
+                </>
+              )}
+            </div>
           </div>
 
-          {/* Quantity */}
+          {product.variants && product.variants.length > 0 && (
+            <div>
+              <h3 className="font-medium mb-3">Options</h3>
+              <Select
+                value={selectedVariant}
+                onValueChange={setSelectedVariant}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select an option" />
+                </SelectTrigger>
+                <SelectContent>
+                  {product.variants.map((variant) => (
+                    <SelectItem
+                      key={variant.id}
+                      value={variant.value}
+                      disabled={!variant.available}
+                    >
+                      {variant.name}: {variant.value}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div>
             <h3 className="font-medium mb-3">Quantity</h3>
             <div className="flex items-center gap-3">
@@ -333,24 +342,37 @@ export default function ProductPage() {
                   variant="ghost"
                   size="icon"
                   onClick={() =>
-                    setQuantity(Math.min(product.stockCount, quantity + 1))
+                    setQuantity(Math.min(product.quantity, quantity + 1))
                   }
-                  disabled={quantity >= product.stockCount}
+                  disabled={quantity >= product.quantity}
                 >
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
               <span className="text-sm text-muted-foreground">
-                {product.stockCount} items available
+                {product.quantity} {product.unit} available
               </span>
             </div>
           </div>
 
-          {/* Add to Cart */}
           <div className="flex gap-3">
-            <Button size="lg" className="flex-1">
+            <Button
+              size="lg"
+              className="flex-1"
+              disabled={!product.inStock || isAddingToCart}
+              onClick={handleAddToCart}
+            >
               <ShoppingCart className="w-4 h-4 mr-2" />
-              Add to Cart
+              {isAddingToCart ? (
+                <>
+                  <Loader className="w-4 h-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : product.inStock ? (
+                "Add to Cart"
+              ) : (
+                "Out of Stock"
+              )}
             </Button>
             <Button
               variant="outline"
@@ -368,7 +390,6 @@ export default function ProductPage() {
             </Button>
           </div>
 
-          {/* Features */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t">
             <div className="flex items-center gap-2 text-sm">
               <Truck className="w-4 h-4 text-green-600" />
@@ -380,20 +401,19 @@ export default function ProductPage() {
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Shield className="w-4 h-4 text-purple-600" />
-              <span>2-year warranty</span>
+              <span>Quality guaranteed</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Product Details Tabs */}
       <div className="mt-16">
         <Tabs defaultValue="description" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="description">Description</TabsTrigger>
             <TabsTrigger value="specifications">Specifications</TabsTrigger>
             <TabsTrigger value="reviews">
-              Reviews ({product.reviewCount})
+              Reviews ({product.reviewCount || 0})
             </TabsTrigger>
           </TabsList>
 
@@ -416,35 +436,49 @@ export default function ProductPage() {
                   <div>
                     <h4 className="font-medium mb-2">Product Details</h4>
                     <dl className="space-y-2 text-sm">
+                      {product.brand && (
+                        <div className="flex justify-between">
+                          <dt className="text-muted-foreground">Brand:</dt>
+                          <dd>{product.brand}</dd>
+                        </div>
+                      )}
+                      {product.sku && (
+                        <div className="flex justify-between">
+                          <dt className="text-muted-foreground">SKU:</dt>
+                          <dd>{product.sku}</dd>
+                        </div>
+                      )}
+                      {product.weight && (
+                        <div className="flex justify-between">
+                          <dt className="text-muted-foreground">Weight:</dt>
+                          <dd>{product.weight}</dd>
+                        </div>
+                      )}
+                      {product.dimensions && (
+                        <div className="flex justify-between">
+                          <dt className="text-muted-foreground">Dimensions:</dt>
+                          <dd>{product.dimensions}</dd>
+                        </div>
+                      )}
                       <div className="flex justify-between">
-                        <dt className="text-muted-foreground">Brand:</dt>
-                        <dd>{product.brand}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-muted-foreground">SKU:</dt>
-                        <dd>{product.sku}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-muted-foreground">Weight:</dt>
-                        <dd>{product.weight}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-muted-foreground">Dimensions:</dt>
-                        <dd>{product.dimensions}</dd>
+                        <dt className="text-muted-foreground">Unit:</dt>
+                        <dd>{product.unit}</dd>
                       </div>
                     </dl>
                   </div>
-                  <div>
-                    <h4 className="font-medium mb-2">Features</h4>
-                    <ul className="space-y-1 text-sm text-muted-foreground">
-                      <li>• Bluetooth 5.0 connectivity</li>
-                      <li>• Active noise cancellation</li>
-                      <li>• 30-hour battery life</li>
-                      <li>• Quick charge capability</li>
-                      <li>• Voice assistant support</li>
-                      <li>• Foldable design</li>
-                    </ul>
-                  </div>
+                  {product.variants && product.variants.length > 0 && (
+                    <div>
+                      <h4 className="font-medium mb-2">Available Options</h4>
+                      <ul className="space-y-1 text-sm text-muted-foreground">
+                        {product.variants.map((variant) => (
+                          <li key={variant.id}>
+                            • {variant.name}: {variant.value}
+                            {!variant.available && " (Out of stock)"}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -452,7 +486,6 @@ export default function ProductPage() {
 
           <TabsContent value="reviews" className="mt-6">
             <div className="space-y-6">
-              {/* Rating Summary */}
               <Card>
                 <CardHeader>
                   <CardTitle>Customer Reviews</CardTitle>
@@ -461,13 +494,13 @@ export default function ProductPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="text-center">
                       <div className="text-4xl font-bold mb-2">
-                        {product.rating}
+                        {product.rating || "0"}
                       </div>
                       <div className="flex justify-center mb-2">
-                        {renderStars(product.rating, "md")}
+                        {renderStars(Number(product.rating), "md")}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Based on {product.reviewCount} reviews
+                        Based on {product.reviewCount || 0} reviews
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -491,56 +524,68 @@ export default function ProductPage() {
                 </CardContent>
               </Card>
 
-              {/* Individual Reviews */}
-              <div className="space-y-4">
-                {reviews.map((review) => (
-                  <Card key={review.id}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-start gap-4">
-                        <Avatar>
-                          <AvatarImage
-                            src={review.avatar || "/placeholder.svg"}
-                          />
-                          <AvatarFallback>
-                            {review.user
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="font-medium">{review.user}</span>
-                            {review.verified && (
-                              <Badge variant="secondary" className="text-xs">
-                                Verified Purchase
-                              </Badge>
+              {reviewsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader className="animate-spin" />
+                </div>
+              ) : reviews.length > 0 ? (
+                <div className="space-y-4">
+                  {reviews.map((review: any) => (
+                    <Card key={review.id}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start gap-4">
+                          <Avatar>
+                            <AvatarImage src={review.user?.image || ""} />
+                            <AvatarFallback>
+                              {review.user?.name
+                                ?.split(" ")
+                                .map((n: string) => n[0])
+                                .join("") || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="font-medium">
+                                {review.user?.name || "Anonymous"}
+                              </span>
+                              {review.verified && (
+                                <Badge variant="secondary" className="text-xs">
+                                  Verified Purchase
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mb-2">
+                              {renderStars(review.rating)}
+                              <span className="text-sm text-muted-foreground">
+                                {new Date(
+                                  review.createdAt
+                                ).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {review.title && (
+                              <h4 className="font-medium mb-2">
+                                {review.title}
+                              </h4>
                             )}
-                          </div>
-                          <div className="flex items-center gap-2 mb-2">
-                            {renderStars(review.rating)}
-                            <span className="text-sm text-muted-foreground">
-                              {review.date}
-                            </span>
-                          </div>
-                          <h4 className="font-medium mb-2">{review.title}</h4>
-                          <p className="text-muted-foreground mb-3">
-                            {review.content}
-                          </p>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <button className="hover:text-foreground">
-                              Helpful ({review.helpful})
-                            </button>
-                            <button className="hover:text-foreground">
-                              Reply
-                            </button>
+                            <p className="text-muted-foreground mb-3">
+                              {review.content}
+                            </p>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <button className="hover:text-foreground">
+                                Helpful ({review.helpful || 0})
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No reviews yet</p>
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>

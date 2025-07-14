@@ -89,7 +89,9 @@ const SellPage = ({ userId }: { userId: string }) => {
 
   const getActiveTab = (): string => {
     const page = searchParams.get("page");
-    return page === "add" || page === "view" ? page : "view";
+    return page === "add" || page === "view" || page === "orders"
+      ? page
+      : "view";
   };
 
   const [activeTab, setActiveTab] = useState(getActiveTab());
@@ -136,6 +138,16 @@ const SellPage = ({ userId }: { userId: string }) => {
         sellerId: userId,
       });
       return response.items;
+    },
+  });
+
+  const { data: sellerOrders, isLoading: ordersLoading } = useQuery({
+    queryKey: ["seller-orders"],
+    queryFn: async () => {
+      return await orpc.shop.getSellerOrders.call({
+        page: 1,
+        limit: 50,
+      });
     },
   });
 
@@ -270,8 +282,9 @@ const SellPage = ({ userId }: { userId: string }) => {
         onValueChange={handleTabChange}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="view">View Products</TabsTrigger>
+          <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="add">Add Product</TabsTrigger>
         </TabsList>
 
@@ -325,6 +338,131 @@ const SellPage = ({ userId }: { userId: string }) => {
               ) : (
                 <p className="text-muted-foreground">
                   You haven't listed any products yet.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="orders">
+          <Card>
+            <CardHeader>
+              <CardTitle>Product Orders</CardTitle>
+              <CardDescription>Orders containing your products</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {ordersLoading ? (
+                <div className="flex justify-center items-center h-full">
+                  <Loader className="animate-spin" />
+                </div>
+              ) : sellerOrders && sellerOrders.length > 0 ? (
+                <div className="space-y-4">
+                  {sellerOrders.map((orderItem) => (
+                    <Card key={orderItem.id} className="p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h4 className="font-semibold text-lg">
+                            {orderItem.product?.name}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            Order ID: {orderItem.orderId}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-lg">
+                            {formatPrice(Number(orderItem.total))}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {orderItem.quantity} ×{" "}
+                            {formatPrice(Number(orderItem.price))}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p>
+                            <strong>Customer:</strong>{" "}
+                            {orderItem.customer?.name as string}
+                          </p>
+                          <p>
+                            <strong>Email:</strong>{" "}
+                            {orderItem.customer?.email as string}
+                          </p>
+                          <p>
+                            <strong>Quantity:</strong> {orderItem.quantity}
+                          </p>
+                          {orderItem.variant && (
+                            <p>
+                              <strong>Variant:</strong> {orderItem.variant}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p>
+                            <strong>Order Status:</strong>
+                            <span
+                              className={`ml-2 px-2 py-1 rounded text-xs ${
+                                orderItem.order?.status === "pending"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : orderItem.order?.status === "completed"
+                                  ? "bg-green-100 text-green-800"
+                                  : orderItem.order?.status === "cancelled"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {orderItem.order?.status || "pending"}
+                            </span>
+                          </p>
+                          <p>
+                            <strong>Payment:</strong>
+                            <span
+                              className={`ml-2 px-2 py-1 rounded text-xs ${
+                                orderItem.order?.paymentStatus === "paid"
+                                  ? "bg-green-100 text-green-800"
+                                  : orderItem.order?.paymentStatus === "pending"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {orderItem.order?.paymentStatus || "pending"}
+                            </span>
+                          </p>
+                          <p>
+                            <strong>Ordered:</strong>{" "}
+                            {new Date(orderItem.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+
+                      {orderItem.order?.shippingAddress && (
+                        <div className="mt-3 pt-3 border-t">
+                          <p className="text-sm">
+                            <strong>Shipping Address:</strong>
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {orderItem.order.shippingAddress}
+                          </p>
+                        </div>
+                      )}
+
+                      {orderItem.order?.notes && (
+                        <div className="mt-2">
+                          <p className="text-sm">
+                            <strong>Order Notes:</strong>
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {orderItem.order.notes}
+                          </p>
+                        </div>
+                      )}
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">
+                  No orders found for your products yet.
                 </p>
               )}
             </CardContent>

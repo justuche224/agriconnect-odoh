@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ModeToggle } from "./mode-toggle";
 import UserMenu from "./user-menu";
 import { usePathname } from "next/navigation";
+import Cart from "./cart";
+import { ShoppingCart } from "lucide-react";
 
 export default function Header() {
   const links = [{ to: "/shop", label: "Shop" }];
@@ -31,6 +33,7 @@ export default function Header() {
         <div className="flex items-center gap-2">
           <ModeToggle />
           <UserMenu />
+          <Cart Icon={ShoppingCart} />
         </div>
       </div>
       <hr />
