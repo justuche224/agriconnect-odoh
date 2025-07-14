@@ -741,7 +741,7 @@ export const shopRouter = {
     .input(
       z.object({
         page: z.number().default(1),
-        limit: z.number().max(20).default(10),
+        limit: z.number().max(50).default(10),
       })
     )
     .handler(async ({ input, context }) => {
