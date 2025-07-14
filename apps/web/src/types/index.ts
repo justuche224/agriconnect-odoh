@@ -15,3 +15,18 @@ export type Product = Awaited<
 export type Category = Awaited<
   ReturnType<typeof orpc.shop.getCategories.call>
 >[number];
+
+export type FarmerProfile = Awaited<
+  ReturnType<typeof orpc.shop.getFarmerProfile.call>
+>;
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  role?: string;
+  image?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}

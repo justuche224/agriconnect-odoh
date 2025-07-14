@@ -801,10 +801,35 @@ export const shopRouter = {
   getFarmerProfile: publicProcedure
     .input(z.object({ userId: z.string() }))
     .handler(async ({ input }) => {
-      const [profile] = await db
+      let [profile] = await db
         .select()
         .from(farmerProfiles)
         .where(eq(farmerProfiles.userId, input.userId));
+
+      // If no profile exists, create a default one
+      if (!profile) {
+        const profileId = crypto.randomUUID();
+        const now = new Date();
+
+        [profile] = await db
+          .insert(farmerProfiles)
+          .values({
+            id: profileId,
+            userId: input.userId,
+            farmName: null,
+            description: null,
+            location: null,
+            phone: null,
+            website: null,
+            certifications: null,
+            avatar: null,
+            banner: null,
+            verified: false,
+            createdAt: now,
+            updatedAt: now,
+          })
+          .returning();
+      }
 
       return profile;
     }),
