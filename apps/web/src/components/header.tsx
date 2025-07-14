@@ -3,9 +3,15 @@ import Link from "next/link";
 
 import { ModeToggle } from "./mode-toggle";
 import UserMenu from "./user-menu";
+import { usePathname } from "next/navigation";
 
 export default function Header() {
   const links = [{ to: "/shop", label: "Shop" }];
+  const pathname = usePathname();
+
+  if (pathname.includes("/dashboard")) {
+    return null;
+  }
 
   return (
     <div>
