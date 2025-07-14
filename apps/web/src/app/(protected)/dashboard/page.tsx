@@ -2,7 +2,7 @@
 import { authClient } from "@/lib/auth-client";
 import { useQuery } from "@tanstack/react-query";
 import { orpc } from "@/utils/orpc";
-import { useRouter } from "next/navigation";
+import { redirect, useRouter } from "next/navigation";
 import { Loader } from "lucide-react";
 import CustomerDashboard from "./customer-dashboard";
 import FarmerDashboard from "./farmer-dashboard";
@@ -22,6 +22,10 @@ export default function Dashboard() {
   if (!session || !session.user) {
     router.push("/login");
     return null;
+  }
+
+  if (session.user.role === "admin") {
+    return redirect("/admin");
   }
 
   return (

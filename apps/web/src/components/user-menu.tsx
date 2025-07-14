@@ -49,6 +49,11 @@ export default function UserMenu() {
             <Link href="/dashboard/sell?page=add">Sell</Link>
           </DropdownMenuItem>
         )}
+        {session.user.role === "admin" && (
+          <DropdownMenuItem asChild>
+            <Link href="/admin">Admin Panel</Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Button
