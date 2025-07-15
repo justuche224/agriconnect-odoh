@@ -267,10 +267,10 @@ export default function ShopPage() {
   }
 
   return (
-    <section className="flex flex-col py-10">
+    <section className="flex flex-col py-10 bg-[url(/images/hero-bg.png),linear-gradient(#000,#000)] bg-cover bg-fixed">
       <section
         suppressHydrationWarning
-        className="bg-background/50 relative overflow-hidden pt-6 sm:pt-10 rounded-br-2xl rounded-bl-2xl sm:rounded-br-4xl sm:rounded-bl-4xl"
+        className="bg-background/50 backdrop-blur-lg relative overflow-hidden pt-6 sm:pt-10 rounded-br-2xl rounded-bl-2xl sm:rounded-br-4xl sm:rounded-bl-4xl"
       >
         <div className="absolute -top-5 -left-5 sm:-top-10 sm:-left-10 w-32 h-32 sm:w-60 sm:h-60 bg-blue-400 opacity-30 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-5 -right-5 sm:-bottom-10 sm:-right-10 w-32 h-32 sm:w-60 sm:h-60 bg-purple-400 opacity-30 rounded-full blur-3xl pointer-events-none" />
@@ -286,7 +286,7 @@ export default function ShopPage() {
         </h2>
       </section>
 
-      <section className="mt-10 px-4 max-w-7xl mx-auto">
+      <section className="mt-10 px-4 max-w-7xl mx-auto bg-background/50 backdrop-blur-lg rounded-lg">
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="w-full lg:w-1/4 space-y-6">
             <div>

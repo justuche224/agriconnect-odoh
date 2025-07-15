@@ -1,205 +1,443 @@
+"use client";
+
 import React from "react";
 import Image from "next/image";
-
-export const metadata = {
-  title: "Home",
-  description: "A platform where farmers and customers interact",
-};
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  ShoppingCart,
+  Users,
+  MapPin,
+  Star,
+  ArrowRight,
+  Leaf,
+  Heart,
+} from "lucide-react";
+import Link from "next/link";
 
 const Homepage = () => {
+  const fadeInUp = {
+    initial: { opacity: 0, y: 60 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.6 },
+  };
+
+  const staggerChildren = {
+    animate: {
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
   return (
-    <div className="">
-      <div className="hero pt-20 -mt-20 flex flex-col justify-between h-screen bg-[url(/images/hero-bg.png),linear-gradient(#000,#000)] bg-black overflow-hidden">
-        <section className="hero text-center grow flex flex-col justify-center gap-4 bg-[linear-gradient(transparent,#173704dd_10%_90%,transparent)] min-h-[70vh] text-white">
-          <h1 className="text-3xl max-w-xl mx-auto mt-auto mb-4">
-            From Seed to Harvest, Farm Smarter
-          </h1>
-          <p className="max-w-lg mx-auto font-light">
-            Revolutionize your agricultural workflow. Our intuitive tools enable
-            real-time monitoring, automated reporting, and precision farming
-          </p>
-          <div
+    <div className="bg-background pt-20">
+      {/* Hero Section */}
+      <div className="hero pt-20 -mt-20 flex flex-col justify-between min-h-screen bg-[url(/images/hero-bg.png),linear-gradient(#000,#000)] bg-cover overflow-hidden">
+        <section className="hero text-center grow flex flex-col justify-center gap-6 bg-[linear-gradient(transparent,#173704dd_10%_90%,transparent)] min-h-[70vh] text-white px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <Badge className="mx-auto mb-4 bg-green-600/20 text-green-400 border-green-600/50">
+              <Leaf className="w-3 h-3 mr-1" />
+              Farm Fresh • Local • Organic
+            </Badge>
+            <h1 className="text-4xl md:text-6xl font-bold max-w-4xl mx-auto mb-6 bg-gradient-to-r from-white to-green-200 bg-clip-text text-transparent">
+              Your Local Farmers Market, Delivered
+            </h1>
+            <p className="max-w-2xl mx-auto font-light text-lg md:text-xl text-gray-200 mb-8">
+              Connect directly with local farmers and discover fresh, organic
+              produce. Supporting sustainable agriculture while bringing the
+              best of farm-to-table right to your door.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                asChild
+                size="lg"
+                className="bg-green-600 hover:bg-green-700 text-white px-8"
+              >
+                <Link href="/shop">
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Shop Now
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="border-white text-white hover:bg-white hover:text-green-700 px-8"
+              >
+                <Link href="/shop/farmers">
+                  <Users className="w-4 h-4 mr-2" />
+                  Meet Our Farmers
+                </Link>
+              </Button>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
             className={
-              "hero-image-wrapper relative w-fit mx-auto mt-auto rounded-full border p-6 " +
-              "before:absolute before:top-8 before:left-8 before:right-8 before:bottom-8 before:border before:border-white before:rounded-full" +
-              " after:absolute after:-top-8 after:-left-8 after:-right-8 after:-bottom-8 after:border after:border-white after:rounded-full"
+              "hero-image-wrapper relative w-fit mx-auto mt-auto rounded-full border-2 border-green-400/50 p-6 " +
+              "before:absolute before:top-8 before:left-8 before:right-8 before:bottom-8 before:border before:border-green-400/30 before:rounded-full" +
+              " after:absolute after:-top-8 after:-left-8 after:-right-8 after:-bottom-8 after:border after:border-green-400/20 after:rounded-full"
             }
           >
             <Image
               src="/images/black-man.png"
               width={666}
               height={666}
-              alt="A farmer"
+              alt="Local farmer"
               className="w-64 h-64 scale-150 -mt-10"
             />
-          </div>
+          </motion.div>
         </section>
       </div>
 
-      <div className="px-1">
-        <hr className="my-3 h-3 bg-gray-300" />
-        <section className="quote text-center bg-gray-300 p-2 text-gray-800 text-lg">
-          {"“Technology doesn't replace the farmer, it amplifies their yield”"}
-        </section>
-        <hr className="my-3 h-3 bg-gray-300" />
-
-        <h2 className="text-2xl max-w-md my-8 md:ml-12">
-          Procure all your farm inputs seamlessly with crypto payments:{" "}
-          <span className="text-gray-700">
-            including Seedlings, Fertilizers and Farm tools
-          </span>
-        </h2>
-
-        <div className="water-fall-wrapper my-8 relative overflow-hidden">
-          <div className="absolute inset-0 -z-10 h-full w-full bg-white bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:48px_48px]">
-            <div className="absolute left-0 right-0 top-0 bottom-0 -z-10 m-auto h-[510px] w-[310px] rounded-full bg-[#51CA0687] blur-[100px]"></div>
-          </div>
-          <div className="container mx-auto">
-            <div className="waterfall-pair my-8 flex gap-12 items-center justify-center">
-              <div className="info max-w-sm">
-                <h3 className="text-2xl text-gray-700">
-                  Different varieties of Seedlings:
-                </h3>
-                <p>
-                  Boost yields with crypto-bought seedlings: efficient,
-                  cost-effective, and hassle-free
-                </p>
-              </div>
-              <div className="image-wrapper relative p-4 rounded-xl bg-gradient-to-t from-gray-300 ring ring-gray-300 w-40 h-auto before:absolute before:w-2 before:h-40 before:top-full before:left-1/2 before:bg-gradient-to-b before:from-gray-300">
-                <Image
-                  src="/images/waterfall-1.png"
-                  width={234.06}
-                  height={322.08}
-                  alt="Closeup picture of a crop"
-                  className="rounded-xl"
-                />
-              </div>
-            </div>
-            <div className="waterfall-pair md:translate-x-20 my-8 flex gap-32 items-center justify-center">
-              <div className="info max-w-sm">
-                <h3 className="text-2xl text-gray-700">
-                  Mechanized farm tools:
-                </h3>
-                <p>
-                  Where technology meets agriculture: fully mechanized farming
-                </p>
-              </div>
-              <div className="image-wrapper relative p-4 rounded-xl bg-gradient-to-t from-gray-300 ring ring-gray-300 w-40 h-auto before:absolute before:w-2 before:h-40 before:top-full before:left-1/2 before:bg-gradient-to-b before:from-gray-300">
-                <Image
-                  src="/images/waterfall-2.png"
-                  width={234.06}
-                  height={322.08}
-                  alt="Closeup picture of a crop"
-                  className="rounded-xl"
-                />
-              </div>
-            </div>
-            <div className="waterfall-pair md:-translate-x-20 my-8 flex gap-12 items-center justify-center">
-              <div className="info max-w-sm">
-                <h3 className="text-2xl text-gray-700">
-                  Environmental friendly fertilizers:
-                </h3>
-                <p>Cultivate sustainability with eco-friendly fertilizers</p>
-              </div>
-              <div className="image-wrapper relative p-4 rounded-xl bg-gradient-to-t from-gray-300 ring ring-gray-300 w-40 h-auto before:absolute before:w-2 before:h-40 before:top-full before:left-1/2 before:bg-gradient-to-b before:from-gray-300">
-                <Image
-                  src="/images/waterfall-3.png"
-                  width={234.06}
-                  height={322.08}
-                  alt="Closeup picture of a crop"
-                  className="rounded-xl"
-                />
-              </div>
-            </div>
-          </div>
+      {/* Stats Section */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        className="py-16 bg-green-50 dark:bg-green-900/20"
+      >
+        <div className="container mx-auto px-4">
+          <motion.div
+            variants={staggerChildren}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center"
+          >
+            <motion.div variants={fadeInUp}>
+              <div className="text-4xl font-bold text-green-600 mb-2">500+</div>
+              <p className="text-gray-600 dark:text-gray-300">Local Farmers</p>
+            </motion.div>
+            <motion.div variants={fadeInUp}>
+              <div className="text-4xl font-bold text-green-600 mb-2">50k+</div>
+              <p className="text-gray-600 dark:text-gray-300">
+                Happy Customers
+              </p>
+            </motion.div>
+            <motion.div variants={fadeInUp}>
+              <div className="text-4xl font-bold text-green-600 mb-2">1M+</div>
+              <p className="text-gray-600 dark:text-gray-300">Products Sold</p>
+            </motion.div>
+          </motion.div>
         </div>
+      </motion.section>
 
-        <section className="wheat">
-          <h2 className="text-2xl max-w-md md:ml-12">
-            Get the exact market prices At your finger Tip:{" "}
-            <span className="text-gray-700">Be the first to know </span>
-          </h2>
-        </section>
-        <Image
-          src="/images/wheat.svg"
-          width={1440}
-          height={1020}
-          className="w-screen"
-          alt="Closeup picture of wheat harvest. bowl of harvested wheat"
-        />
-
-        <div className="cards-wrapper container mx-auto flex justify-evenly flex-wrap gap-2 my-8 ">
-          <Image
-            src="/images/cereal-card.png"
-            width={620}
-            height={516}
-            alt="Cereals"
-            className="w-96"
-          />
-          <Image
-            src="/images/machine-card.png"
-            width={613}
-            height={516}
-            alt="Machines"
-            className="w-96"
-          />
+      {/* Quote Section */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        className="py-8 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-center"
+      >
+        <div className="container mx-auto px-4">
+          <motion.blockquote
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-xl md:text-2xl font-light italic"
+          >
+            "Fresh from farm to table, supporting local communities one harvest
+            at a time"
+          </motion.blockquote>
         </div>
-        <h2 className="text-2xl max-w-md md:ml-12 my-12">
-          Stay Updated about the ravaging pest diseases and their seasons:{" "}
-          <span className="text-gray-700">Beware and take caution too</span>
-        </h2>
+      </motion.section>
 
-        <section className="tomato relative container mx-auto flex justify-around">
-          <div className="absolute bottom-0 left-0 right-0 top-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,transparent_70%,#000_110%)]"></div>
-          <div className="info">
-            <h3 className="text-2xl max-w-md my-4">
-              Tomato Disease:{" "}
-              <span className="text-gray-700">
-                {" "}
-                Early Blight (Alternaria solani)
-              </span>
-            </h3>
+      {/* Features Section */}
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Why Choose Our Farmers Market?
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Discover the freshest produce, support local farmers, and enjoy
+              the convenience of online shopping with farm-fresh quality.
+            </p>
+          </motion.div>
 
-            <h4 className="font-bold text-xl my-2">Symptoms:</h4>
+          <motion.div
+            variants={staggerChildren}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+          >
+            <motion.div variants={fadeInUp}>
+              <Card className="p-8 text-center hover:shadow-lg transition-shadow h-full">
+                <CardContent className="pt-6">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Leaf className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">100% Organic</h3>
+                  <p className="text-muted-foreground">
+                    All our produce is certified organic, grown without harmful
+                    pesticides or chemicals, ensuring the healthiest options for
+                    your family.
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            <ol className="list-decimal ml-4">
-              <li>Yellowing or chlorotic leaves</li>
-              <li>Black or brown spots on lower leaves</li>
-              <li>Lesions with concentric rings (target-like)</li>
-              <li>Defoliation and reduced fruit production</li>
-            </ol>
+            <motion.div variants={fadeInUp}>
+              <Card className="p-8 text-center hover:shadow-lg transition-shadow h-full">
+                <CardContent className="pt-6">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MapPin className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">Local Sourcing</h3>
+                  <p className="text-muted-foreground">
+                    Support your local community by purchasing directly from
+                    farmers in your area. Fresher produce with a smaller carbon
+                    footprint.
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            <h4 className="font-bold text-xl my-2">Management:</h4>
+            <motion.div variants={fadeInUp}>
+              <Card className="p-8 text-center hover:shadow-lg transition-shadow h-full">
+                <CardContent className="pt-6">
+                  <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Heart className="w-8 h-8 text-purple-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">Fair Trade</h3>
+                  <p className="text-muted-foreground">
+                    Fair prices for farmers and transparent pricing for
+                    customers. Building sustainable relationships that benefit
+                    everyone.
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
 
-            <ol className="list-decimal ml-4">
-              <li>Crop rotation and sanitation</li>
-              <li>Remove infected leaves and debris</li>
-            </ol>
+      {/* Product Categories */}
+      <section className="py-20 bg-green-50 dark:bg-green-900/10">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Fresh Categories
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Browse our wide selection of fresh, seasonal produce directly from
+              local farms.
+            </p>
+          </motion.div>
 
-            <h4 className="font-bold text-xl my-2">Prevention:</h4>
+          <motion.div
+            variants={staggerChildren}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
+            {[
+              {
+                title: "Fresh Vegetables",
+                desc: "Crisp, colorful vegetables picked at peak ripeness",
+                image: "/images/waterfall-1.png",
+              },
+              {
+                title: "Seasonal Fruits",
+                desc: "Sweet, juicy fruits harvested at perfect timing",
+                image: "/images/waterfall-2.png",
+              },
+              {
+                title: "Organic Herbs",
+                desc: "Aromatic herbs and spices grown with care",
+                image: "/images/waterfall-3.png",
+              },
+            ].map((category, index) => (
+              <motion.div key={index} variants={fadeInUp}>
+                <Card className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer">
+                  <div className="relative h-48 overflow-hidden">
+                    <Image
+                      src={category.image}
+                      width={400}
+                      height={300}
+                      alt={category.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div className="absolute bottom-4 left-4 text-white">
+                      <h3 className="text-xl font-semibold mb-1">
+                        {category.title}
+                      </h3>
+                      <p className="text-sm text-gray-200">{category.desc}</p>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
 
-            <ol className="list-decimal ml-4">
-              <li>Use disease-free seeds</li>
-              <li>Maintain soil health and fertility</li>
-            </ol>
-          </div>
-          <div className="img-wrapper h-[30rem]">
-            <Image
-              src="/images/tomato.png"
-              width={730}
-              height={1131}
-              alt="Closeup picture of Tomato"
-              className="h-full w-full rounded-xl object-contain"
-            />
-          </div>
-        </section>
+      {/* Featured Products */}
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Featured Products
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Discover our most popular items, carefully selected from the best
+              local farms.
+            </p>
+          </motion.div>
 
-        <hr className="my-3 h-3 bg-gray-300" />
-        <section className="quote text-center bg-gray-300 p-2 text-gray-800 text-lg">
-          {'"Insights today, increased yields tomorrow."'}
-        </section>
-        <hr className="my-3 h-3 bg-gray-300" />
-      </div>
+          <motion.div
+            className="flex justify-center gap-8 flex-wrap"
+            variants={staggerChildren}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+          >
+            <motion.div variants={fadeInUp}>
+              <Card className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer max-w-md">
+                <Image
+                  src="/images/cereal-card.png"
+                  width={400}
+                  height={300}
+                  alt="Organic Grains & Cereals"
+                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xl font-semibold">Organic Grains</h3>
+                    <div className="flex items-center">
+                      <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                      <span className="ml-1 text-sm text-muted-foreground">
+                        4.9
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground mb-4">
+                    Premium quality grains and cereals, perfect for healthy
+                    meals.
+                  </p>
+                  <Button asChild className="w-full">
+                    <Link href="/shop">
+                      Shop Now
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div variants={fadeInUp}>
+              <Card className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer max-w-md">
+                <Image
+                  src="/images/machine-card.png"
+                  width={400}
+                  height={300}
+                  alt="Farm Equipment & Tools"
+                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xl font-semibold">Farm Tools</h3>
+                    <div className="flex items-center">
+                      <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                      <span className="ml-1 text-sm text-muted-foreground">
+                        4.8
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground mb-4">
+                    Quality farming equipment and tools for your gardening
+                    needs.
+                  </p>
+                  <Button asChild className="w-full">
+                    <Link href="/shop">
+                      Shop Now
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        className="py-20 bg-gradient-to-br from-green-600 via-emerald-600 to-teal-600 text-white relative overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-black/20" />
+        <div className="container mx-auto px-4 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Ready to Start Shopping?
+            </h2>
+            <p className="text-xl mb-8 max-w-2xl mx-auto text-green-100">
+              Join thousands of customers who trust us for their fresh, organic
+              produce. Start your farm-to-table journey today.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                asChild
+                size="lg"
+                className="bg-white text-green-600 hover:bg-green-50 px-8"
+              >
+                <Link href="/shop">
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Browse Products
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="border-white text-white hover:bg-white hover:text-green-600 px-8"
+              >
+                <Link href="/shop/farmers">
+                  <Users className="w-4 h-4 mr-2" />
+                  Meet Farmers
+                </Link>
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </motion.section>
     </div>
   );
 };
