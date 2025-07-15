@@ -257,7 +257,12 @@ const auth = betterAuth({
 		default: "customer"
 	} } },
 	secret: process.env.BETTER_AUTH_SECRET,
-	baseURL: process.env.BETTER_AUTH_URL
+	baseURL: process.env.BETTER_AUTH_URL,
+	advanced: { defaultCookieAttributes: {
+		secure: true,
+		httpOnly: true,
+		sameSite: "none"
+	} }
 });
 
 //#endregion
