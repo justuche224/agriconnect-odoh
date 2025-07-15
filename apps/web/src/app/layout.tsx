@@ -15,8 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "agriconnect",
-  description: "agriconnect",
+  title: "Agriconnect - Your Local Farmers Market, Delivered",
+  description:
+    "Connect directly with local farmers and discover fresh, organic produce. Supporting sustainable agriculture while bringing the best of farm-to-table right to your door.",
 };
 
 export default function RootLayout({
