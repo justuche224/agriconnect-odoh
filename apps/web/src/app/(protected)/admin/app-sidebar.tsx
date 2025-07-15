@@ -1,5 +1,5 @@
 "use client";
-import { Home, Users, Wallet } from "lucide-react";
+import { Home, Users, Wallet, MessageCircle } from "lucide-react";
 
 import {
   Sidebar,
@@ -30,6 +30,11 @@ const items = [
     title: "Orders",
     url: "/admin/orders",
     icon: Wallet,
+  },
+  {
+    title: "Inbox",
+    url: "/admin/inbox",
+    icon: MessageCircle,
   },
 ];
 
