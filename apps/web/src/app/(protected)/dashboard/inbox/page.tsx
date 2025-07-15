@@ -3,7 +3,7 @@
 import { authClient } from "@/lib/auth-client";
 import { Loader } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { orpc } from "@/utils/orpc";
 import { convertBlobUrlToFile } from "@/lib/convert-blob-url-to-file";
 import { uploadImage } from "@/lib/supabase/storage/client";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import {
   Dialog,
   DialogContent,
@@ -53,22 +54,6 @@ const page = () => {
 
 export default page;
 
-// interface Message {
-//   id: string;
-//   content: string | null;
-//   messageType: string;
-//   imageUrl: string | null;
-//   createdAt: Date;
-//   isEdited: boolean;
-//   sender: {
-//     id: string;
-//     name: string;
-//     email: string;
-//     image: string | null;
-//   };
-//   isOwn: boolean;
-// }
-
 interface Conversation {
   conversation: {
     id: string;
@@ -106,20 +91,64 @@ const InboxPage = ({ userId }: { userId: string }) => {
   const [imageError, setImageError] = useState("");
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const queryClient = useQueryClient();
 
   const MAX_FILE_SIZE = 4 * 1024 * 1024;
 
-  // Scroll to bottom of messages
+  // WebSocket connection - only enable after component stabilizes
+  const [wsEnabled, setWsEnabled] = useState(false);
+
+  useEffect(() => {
+    // Enable WebSocket after a short delay to prevent React Strict Mode issues
+    const timer = setTimeout(() => setWsEnabled(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const {
+    status: wsStatus,
+    sendTyping,
+    isConnected,
+  } = useWebSocket({
+    url: `${process.env.NEXT_PUBLIC_SERVER_URL}/ws`,
+    enabled: wsEnabled,
+    onConnect: () => {
+      console.log("Connected to WebSocket");
+    },
+    onDisconnect: () => {
+      console.log("Disconnected from WebSocket");
+    },
+  });
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (selectedConversation) {
+      setTimeout(scrollToBottom, 100);
+    }
   }, [selectedConversation]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        handleTyping(false);
+      }
+    };
+  }, [selectedConversation]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const updateSelectedConversation = (conversationId: string | null) => {
     setSelectedConversation(conversationId);
@@ -302,25 +331,66 @@ const InboxPage = ({ userId }: { userId: string }) => {
     setSelectedImage(URL.createObjectURL(file));
   };
 
+  // Handle typing indicators with debouncing
+  const handleTyping = useCallback(
+    (isTyping: boolean) => {
+      if (selectedConversation && isConnected) {
+        sendTyping(selectedConversation, isTyping);
+      }
+    },
+    [selectedConversation, isConnected, sendTyping]
+  );
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessageText(e.target.value);
+
+    // Send typing indicator with debouncing
+    if (e.target.value.trim() && selectedConversation && isConnected) {
+      handleTyping(true);
+
+      // Clear previous timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Stop typing indicator after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        handleTyping(false);
+      }, 2000);
+    } else if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      handleTyping(false);
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+      // Stop typing indicator when sending
+      handleTyping(false);
     }
   };
 
-  const formatTime = (date: Date) => {
+  const formatTime = (date: Date | string) => {
     const now = new Date();
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+
+    // Check if date is valid
+    if (isNaN(dateObj.getTime())) {
+      return "Invalid date";
+    }
+
     const diffInHours =
-      Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60);
+      Math.abs(now.getTime() - dateObj.getTime()) / (1000 * 60 * 60);
 
     if (diffInHours < 24) {
-      return date.toLocaleTimeString([], {
+      return dateObj.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       });
     } else {
-      return date.toLocaleDateString();
+      return dateObj.toLocaleDateString();
     }
   };
 
@@ -333,6 +403,14 @@ const InboxPage = ({ userId }: { userId: string }) => {
 
   const conversations = conversationsData?.conversations || [];
   const messages = messagesData?.messages || [];
+
+  // Scroll to bottom when messages change (including WebSocket updates)
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Small delay to ensure new messages are rendered
+      setTimeout(scrollToBottom, 100);
+    }
+  }, [messages.length, messages, scrollToBottom]);
 
   return (
     <div className="container max-w-7xl mx-auto mt-10">
@@ -524,10 +602,18 @@ const InboxPage = ({ userId }: { userId: string }) => {
                             .toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <h3 className="font-semibold">
-                          {getConversationTitle(conversation)}
-                        </h3>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">
+                            {getConversationTitle(conversation)}
+                          </h3>
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              isConnected ? "bg-green-500" : "bg-gray-400"
+                            }`}
+                            title={isConnected ? "Connected" : "Disconnected"}
+                          />
+                        </div>
                         <p className="text-sm text-gray-500">
                           {conversation.otherParticipant?.email}
                         </p>
@@ -655,13 +741,15 @@ const InboxPage = ({ userId }: { userId: string }) => {
                   </Button>
 
                   <Textarea
-                    placeholder="Type a message..."
+                    placeholder={
+                      isConnected ? "Type a message..." : "Connecting..."
+                    }
                     value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
+                    onChange={handleInputChange}
                     onKeyDown={handleKeyPress}
                     className="flex-1 resize-none"
                     rows={1}
-                    disabled={sendMessageMutation.isPending}
+                    disabled={sendMessageMutation.isPending || !isConnected}
                   />
 
                   <Button

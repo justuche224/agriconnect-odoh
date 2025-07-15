@@ -10,6 +10,11 @@ import {
   messages,
   messageReads,
 } from "../db/schema/chat";
+import { wsManager } from "../lib/websocket-manager";
+import type {
+  MessageNewEvent,
+  ConversationUpdatedEvent,
+} from "../types/websocket";
 
 export const chatRouter = {
   getConversations: protectedProcedure
@@ -326,6 +331,67 @@ export const chatRouter = {
           updatedAt: new Date(),
         })
         .where(eq(conversations.id, input.conversationId));
+
+      // Get sender information for WebSocket event
+      const [senderInfo] = await db
+        .select({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+        })
+        .from(user)
+        .where(eq(user.id, userId))
+        .limit(1);
+
+      // Broadcast new message to conversation participants
+      const messageEvent: MessageNewEvent = {
+        type: "MESSAGE_NEW",
+        data: {
+          conversationId: input.conversationId,
+          message: {
+            id: newMessage.id,
+            content: newMessage.content,
+            messageType: newMessage.messageType,
+            imageUrl: newMessage.imageUrl,
+            createdAt: newMessage.createdAt,
+            isEdited: newMessage.isEdited,
+            sender: senderInfo,
+            isOwn: false, // Will be determined by the client
+          },
+        },
+        timestamp: new Date(),
+      };
+
+      wsManager.broadcastToConversation(
+        input.conversationId,
+        messageEvent,
+        userId // Exclude sender
+      );
+
+      // Broadcast conversation update
+      const conversationEvent: ConversationUpdatedEvent = {
+        type: "CONVERSATION_UPDATED",
+        data: {
+          conversationId: input.conversationId,
+          lastMessageAt: new Date(),
+          lastMessage: {
+            id: newMessage.id,
+            content: newMessage.content,
+            messageType: newMessage.messageType,
+            imageUrl: newMessage.imageUrl,
+            createdAt: newMessage.createdAt,
+            senderId: userId,
+            senderName: senderInfo.name,
+          },
+        },
+        timestamp: new Date(),
+      };
+
+      wsManager.broadcastToConversation(
+        input.conversationId,
+        conversationEvent
+      );
 
       return newMessage;
     }),

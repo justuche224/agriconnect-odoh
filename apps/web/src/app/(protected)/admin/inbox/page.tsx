@@ -117,8 +117,12 @@ const InboxPage = ({ userId }: { userId: string }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Scroll to bottom when conversation changes
   useEffect(() => {
-    scrollToBottom();
+    if (selectedConversation) {
+      // Small delay to ensure messages are rendered
+      setTimeout(scrollToBottom, 100);
+    }
   }, [selectedConversation]);
 
   const updateSelectedConversation = (conversationId: string | null) => {
@@ -309,18 +313,25 @@ const InboxPage = ({ userId }: { userId: string }) => {
     }
   };
 
-  const formatTime = (date: Date) => {
+  const formatTime = (date: Date | string) => {
     const now = new Date();
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+
+    // Check if date is valid
+    if (isNaN(dateObj.getTime())) {
+      return "Invalid date";
+    }
+
     const diffInHours =
-      Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60);
+      Math.abs(now.getTime() - dateObj.getTime()) / (1000 * 60 * 60);
 
     if (diffInHours < 24) {
-      return date.toLocaleTimeString([], {
+      return dateObj.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       });
     } else {
-      return date.toLocaleDateString();
+      return dateObj.toLocaleDateString();
     }
   };
 
@@ -333,6 +344,14 @@ const InboxPage = ({ userId }: { userId: string }) => {
 
   const conversations = conversationsData?.conversations || [];
   const messages = messagesData?.messages || [];
+
+  // Scroll to bottom when messages change (including WebSocket updates)
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Small delay to ensure new messages are rendered
+      setTimeout(scrollToBottom, 100);
+    }
+  }, [messages.length, messages]);
 
   return (
     <div className="container max-w-7xl mx-auto mt-10">
