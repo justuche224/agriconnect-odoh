@@ -132,8 +132,8 @@ export default function ShopPage() {
     product: Product;
     isListView: boolean;
   }) => (
-    <Card
-      className={`group hover:shadow-lg transition-shadow ${
+    <div
+      className={`group hover:shadow-lg transition-shadow bg-background/50 backdrop-blur-lg rounded-2xl ${
         isListView ? "flex flex-row" : ""
       }`}
     >
@@ -255,7 +255,7 @@ export default function ShopPage() {
           </Button>
         </div>
       </CardContent>
-    </Card>
+    </div>
   );
 
   if (categoriesLoading || productsLoading) {
@@ -286,7 +286,7 @@ export default function ShopPage() {
         </h2>
       </section>
 
-      <section className="mt-10 px-4 max-w-7xl mx-auto bg-background/50 backdrop-blur-lg rounded-lg">
+      <section className="mt-10 px-4 max-w-7xl mx-auto bg-background/50 backdrop-blur-lg rounded-lg py-10">
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="w-full lg:w-1/4 space-y-6">
             <div>

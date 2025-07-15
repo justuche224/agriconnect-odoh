@@ -297,11 +297,11 @@ export default function FarmerProfilePage() {
                 <Loader className="animate-spin" />
               </div>
             ) : products?.items && products.items.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {products.items.map((product) => (
-                  <Card
+                  <div
                     key={product.id}
-                    className="hover:shadow-lg transition-shadow"
+                    className="hover:shadow-lg transition-shadow bg-background/50 backdrop-blur-lg rounded-2xl"
                   >
                     <CardHeader className="p-0">
                       <div className="relative aspect-square">
@@ -366,7 +366,7 @@ export default function FarmerProfilePage() {
                         </Button>
                       </div>
                     </CardContent>
-                  </Card>
+                  </div>
                 ))}
               </div>
             ) : (
