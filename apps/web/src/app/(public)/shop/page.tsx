@@ -68,7 +68,7 @@ export default function ShopPage() {
     queryFn: async () => {
       const response = await orpc.shop.getProducts.call({
         page: currentPage,
-        limit: 12,
+        limit: 50,
         search: searchQuery || undefined,
         categoryId: selectedCategories[0] || undefined,
         sortBy: sortBy as any,
