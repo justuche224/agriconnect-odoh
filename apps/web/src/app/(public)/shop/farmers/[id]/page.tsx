@@ -30,11 +30,13 @@ import {
   Mail,
   Award,
   Users,
+  MessageCircle,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { orpc } from "@/utils/orpc";
 import formatPrice from "@/lib/format-price";
+import { authClient } from "@/lib/auth-client";
 
 const hasUserName = (user: any): user is { name: string } => {
   return user && typeof user === "object" && "name" in user;
@@ -56,6 +58,8 @@ export default function FarmerProfilePage() {
   const [productsSortBy, setProductsSortBy] = useState<
     "featured" | "newest" | "price-low" | "price-high" | "rating"
   >("featured");
+
+  const { data: session } = authClient.useSession();
 
   const {
     data: farmer,
@@ -248,6 +252,14 @@ export default function FarmerProfilePage() {
                       <Globe className="w-4 h-4 mr-2" />
                       Website
                     </a>
+                  </Button>
+                )}
+                {session?.user && session.user.id !== farmerId && (
+                  <Button variant="default" size="sm" asChild>
+                    <Link href={`/dashboard/inbox?chat=${farmerId}`}>
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Message
+                    </Link>
                   </Button>
                 )}
               </div>

@@ -32,6 +32,7 @@ import {
   Globe,
   BadgeCheck,
   User,
+  MessageCircle,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -41,6 +42,7 @@ import formatPrice from "@/lib/format-price";
 import { useParams } from "next/navigation";
 import { useCartStore } from "@/lib/store/cart";
 import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
 
 export default function ProductPage() {
   const params = useParams();
@@ -53,6 +55,7 @@ export default function ProductPage() {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   const addItem = useCartStore((state) => state.addItem);
+  const { data: session } = authClient.useSession();
 
   const {
     data: product,
@@ -467,6 +470,17 @@ export default function ProductPage() {
                             View Profile
                           </Link>
                         </Button>
+                        {session?.user &&
+                          session.user.id !== product.sellerId && (
+                            <Button asChild size="sm" variant="default">
+                              <Link
+                                href={`/dashboard/inbox?chat=${product.sellerId}`}
+                              >
+                                <MessageCircle className="w-4 h-4 mr-2" />
+                                Message
+                              </Link>
+                            </Button>
+                          )}
                         {product.farmerProfile?.phone && (
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <Phone className="w-3 h-3" />
