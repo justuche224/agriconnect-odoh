@@ -33,6 +33,7 @@ import {
   Search,
   Plus,
   Users,
+  ArrowLeft,
 } from "lucide-react";
 
 const page = () => {
@@ -92,6 +93,7 @@ const InboxPage = ({ userId }: { userId: string }) => {
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const [showMobileChat, setShowMobileChat] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -152,12 +154,21 @@ const InboxPage = ({ userId }: { userId: string }) => {
 
   const updateSelectedConversation = (conversationId: string | null) => {
     setSelectedConversation(conversationId);
+    setShowMobileChat(!!conversationId);
     const params = new URLSearchParams(searchParams.toString());
     if (conversationId) {
       params.set("chat", conversationId);
     } else {
       params.delete("chat");
     }
+    router.replace(`/dashboard/inbox?${params.toString()}`, { scroll: false });
+  };
+
+  const handleBackToConversations = () => {
+    setShowMobileChat(false);
+    setSelectedConversation(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("chat");
     router.replace(`/dashboard/inbox?${params.toString()}`, { scroll: false });
   };
 
@@ -413,24 +424,33 @@ const InboxPage = ({ userId }: { userId: string }) => {
   }, [messages.length, messages, scrollToBottom]);
 
   return (
-    <div className="container max-w-7xl mx-auto mt-10">
-      <div className="flex h-[calc(100vh-8rem)] bg-card rounded-lg shadow-lg overflow-hidden">
+    <div className="container max-w-7xl mx-auto mt-4 md:mt-10 px-4">
+      <div className="flex h-[calc(100vh-6rem)] md:h-[calc(100vh-8rem)] bg-card rounded-lg shadow-lg overflow-hidden">
         {/* Conversations Sidebar */}
-        <div className="w-1/3 bg-card/50 border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
+        <div
+          className={`${
+            showMobileChat ? "hidden" : "flex"
+          } lg:flex w-full lg:w-1/3 bg-card/50 border-r-0 lg:border-r border-gray-200 flex-col`}
+        >
+          <div className="p-3 md:p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold flex items-center">
-                <MessageCircle className="mr-2 h-5 w-5" />
+              <h2 className="text-lg md:text-xl font-semibold flex items-center">
+                <MessageCircle className="mr-2 h-4 w-4 md:h-5 md:w-5" />
                 Messages
               </h2>
               <Dialog open={isNewChatOpen} onOpenChange={setIsNewChatOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm" variant="outline">
-                    <Plus className="h-4 w-4 mr-1" />
-                    New Chat
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs md:text-sm"
+                  >
+                    <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                    <span className="hidden sm:inline">New Chat</span>
+                    <span className="sm:hidden">New</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="mx-4 max-w-md">
                   <DialogHeader>
                     <DialogTitle>Start a New Conversation</DialogTitle>
                     <DialogDescription>
@@ -464,15 +484,17 @@ const InboxPage = ({ userId }: { userId: string }) => {
                                 createConversationMutation.mutate(user.id)
                               }
                             >
-                              <Avatar className="h-10 w-10 mr-3">
+                              <Avatar className="h-8 w-8 md:h-10 md:w-10 mr-3">
                                 <AvatarImage src={user.image || ""} />
                                 <AvatarFallback>
                                   {user.name?.charAt(0).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
-                              <div className="flex-1">
-                                <p className="font-medium">{user.name}</p>
-                                <p className="text-sm text-gray-500">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm md:text-base truncate">
+                                  {user.name}
+                                </p>
+                                <p className="text-xs md:text-sm text-gray-500 truncate">
                                   {user.email}
                                 </p>
                                 <Badge
@@ -491,7 +513,7 @@ const InboxPage = ({ userId }: { userId: string }) => {
                       (!searchResults ||
                         searchResults.filter((user: any) => user.id !== userId)
                           .length === 0) && (
-                        <p className="text-center text-gray-500">
+                        <p className="text-center text-gray-500 text-sm">
                           No users found
                         </p>
                       )}
@@ -521,7 +543,7 @@ const InboxPage = ({ userId }: { userId: string }) => {
                     }
                   >
                     <div className="flex items-center space-x-3">
-                      <Avatar className="h-12 w-12">
+                      <Avatar className="h-10 w-10 md:h-12 md:w-12 flex-shrink-0">
                         <AvatarImage
                           src={conversation.otherParticipant?.image || ""}
                         />
@@ -533,10 +555,10 @@ const InboxPage = ({ userId }: { userId: string }) => {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <p className="font-medium truncate">
+                          <p className="font-medium truncate text-sm md:text-base">
                             {getConversationTitle(conversation)}
                           </p>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-2 flex-shrink-0">
                             {conversation.unreadCount > 0 && (
                               <Badge variant="destructive" className="text-xs">
                                 {conversation.unreadCount}
@@ -553,7 +575,7 @@ const InboxPage = ({ userId }: { userId: string }) => {
                           </div>
                         </div>
                         {conversation.lastMessage && (
-                          <p className="text-sm text-gray-600 truncate mt-1">
+                          <p className="text-xs md:text-sm text-gray-600 truncate mt-1">
                             {conversation.lastMessage.messageType ===
                             "image" ? (
                               <span className="flex items-center">
@@ -571,28 +593,42 @@ const InboxPage = ({ userId }: { userId: string }) => {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                <MessageCircle className="h-12 w-12 mb-4" />
-                <p>No conversations yet</p>
-                <p className="text-sm">Start a new chat to get started</p>
+              <div className="flex flex-col items-center justify-center h-full text-gray-500 p-4">
+                <MessageCircle className="h-10 w-10 md:h-12 md:w-12 mb-4" />
+                <p className="text-sm md:text-base">No conversations yet</p>
+                <p className="text-xs md:text-sm text-center">
+                  Start a new chat to get started
+                </p>
               </div>
             )}
           </div>
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
+        <div
+          className={`${
+            !showMobileChat ? "hidden" : "flex"
+          } lg:flex flex-1 flex-col w-full lg:w-auto`}
+        >
           {selectedConversation ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b border-gray-200 bg-card">
+              <div className="p-3 md:p-4 border-b border-gray-200 bg-card">
                 {(() => {
                   const conversation = conversations.find(
                     (c) => c.conversation.id === selectedConversation
                   );
                   return conversation ? (
                     <div className="flex items-center space-x-3">
-                      <Avatar className="h-10 w-10">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="lg:hidden p-2 h-8 w-8"
+                        onClick={handleBackToConversations}
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                      </Button>
+                      <Avatar className="h-8 w-8 md:h-10 md:w-10 flex-shrink-0">
                         <AvatarImage
                           src={conversation.otherParticipant?.image || ""}
                         />
@@ -602,19 +638,19 @@ const InboxPage = ({ userId }: { userId: string }) => {
                             .toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">
+                          <h3 className="font-semibold text-sm md:text-base truncate">
                             {getConversationTitle(conversation)}
                           </h3>
                           <div
-                            className={`w-2 h-2 rounded-full ${
+                            className={`w-2 h-2 rounded-full flex-shrink-0 ${
                               isConnected ? "bg-green-500" : "bg-gray-400"
                             }`}
                             title={isConnected ? "Connected" : "Disconnected"}
                           />
                         </div>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs md:text-sm text-gray-500 truncate">
                           {conversation.otherParticipant?.email}
                         </p>
                       </div>
@@ -624,7 +660,7 @@ const InboxPage = ({ userId }: { userId: string }) => {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-card">
+              <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 bg-card">
                 {messagesLoading ? (
                   <div className="flex justify-center items-center h-full">
                     <Loader className="animate-spin" />
@@ -639,7 +675,7 @@ const InboxPage = ({ userId }: { userId: string }) => {
                         }`}
                       >
                         <div
-                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                          className={`max-w-[85%] sm:max-w-xs lg:max-w-md px-3 md:px-4 py-2 rounded-lg ${
                             message.isOwn
                               ? "bg-blue-500 text-white"
                               : "bg-white text-gray-900 border"
@@ -657,7 +693,7 @@ const InboxPage = ({ userId }: { userId: string }) => {
                                 <Image
                                   src={message.imageUrl}
                                   alt="Sent image"
-                                  width={300}
+                                  width={250}
                                   height={200}
                                   className="rounded-md max-w-full h-auto"
                                 />
@@ -665,7 +701,7 @@ const InboxPage = ({ userId }: { userId: string }) => {
                             )}
 
                           {message.content && (
-                            <p className="whitespace-pre-wrap">
+                            <p className="whitespace-pre-wrap text-sm md:text-base">
                               {message.content}
                             </p>
                           )}
@@ -684,10 +720,10 @@ const InboxPage = ({ userId }: { userId: string }) => {
                     <div ref={messagesEndRef} />
                   </>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                    <MessageCircle className="h-12 w-12 mb-4" />
-                    <p>No messages yet</p>
-                    <p className="text-sm">
+                  <div className="flex flex-col items-center justify-center h-full text-gray-500 p-4">
+                    <MessageCircle className="h-10 w-10 md:h-12 md:w-12 mb-4" />
+                    <p className="text-sm md:text-base">No messages yet</p>
+                    <p className="text-xs md:text-sm text-center">
                       Send a message to start the conversation
                     </p>
                   </div>
@@ -695,14 +731,14 @@ const InboxPage = ({ userId }: { userId: string }) => {
               </div>
 
               {/* Message Input */}
-              <div className="p-4 border-t border-gray-200 bg-card">
+              <div className="p-3 md:p-4 border-t border-gray-200 bg-card">
                 {selectedImage && (
                   <div className="mb-3 relative inline-block">
                     <Image
                       src={selectedImage}
                       alt="Selected image"
-                      width={100}
-                      height={100}
+                      width={80}
+                      height={80}
                       className="rounded-md object-cover"
                     />
                     <button
@@ -736,6 +772,7 @@ const InboxPage = ({ userId }: { userId: string }) => {
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={sendMessageMutation.isPending || !!selectedImage}
+                    className="p-2 h-9 w-9 md:h-10 md:w-10"
                   >
                     <ImageIcon className="h-4 w-4" />
                   </Button>
@@ -747,7 +784,7 @@ const InboxPage = ({ userId }: { userId: string }) => {
                     value={messageText}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyPress}
-                    className="flex-1 resize-none"
+                    className="flex-1 resize-none text-sm md:text-base"
                     rows={1}
                     disabled={sendMessageMutation.isPending || !isConnected}
                   />
@@ -759,6 +796,7 @@ const InboxPage = ({ userId }: { userId: string }) => {
                       (!messageText.trim() && !selectedImage)
                     }
                     size="sm"
+                    className="h-9 w-9 md:h-10 md:w-10"
                   >
                     {sendMessageMutation.isPending ? (
                       <Loader className="h-4 w-4 animate-spin" />
@@ -770,12 +808,12 @@ const InboxPage = ({ userId }: { userId: string }) => {
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
-              <Users className="h-16 w-16 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-500 p-4">
+              <Users className="h-12 w-12 md:h-16 md:w-16 mb-4" />
+              <h3 className="text-lg md:text-xl font-semibold mb-2 text-center">
                 Select a conversation
               </h3>
-              <p className="text-center">
+              <p className="text-center text-sm md:text-base">
                 Choose a conversation from the left to start messaging
                 <br />
                 or start a new chat
