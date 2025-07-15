@@ -8,13 +8,15 @@ import { Textarea } from "./ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Separator } from "./ui/separator";
 import { Badge } from "./ui/badge";
-import { Loader } from "lucide-react";
+import { Loader, CheckCircle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { orpc } from "@/utils/orpc";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import formatPrice from "@/lib/format-price";
 import Image from "next/image";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import Confetti from "react-confetti";
 
 interface CheckoutForm {
   shippingAddress: string;
@@ -25,6 +27,7 @@ interface CheckoutForm {
 const Checkout = () => {
   const router = useRouter();
   const { items, clearCart } = useCartStore();
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [form, setForm] = useState<CheckoutForm>({
     shippingAddress: "",
     billingAddress: "",
@@ -60,14 +63,21 @@ const Checkout = () => {
       });
     },
     onSuccess: (order) => {
-      clearCart();
+      setShowSuccessModal(true);
+      setTimeout(() => {
+        clearCart();
+      }, 500);
       toast.success("Order placed successfully!");
-      router.push(`/dashboard`);
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to place order");
     },
   });
+
+  const handleContinue = () => {
+    setShowSuccessModal(false);
+    router.push(`/dashboard`);
+  };
 
   const handleInputChange = (field: keyof CheckoutForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -89,7 +99,7 @@ const Checkout = () => {
     createOrderMutation.mutate(form);
   };
 
-  if (items.length === 0) {
+  if (items.length === 0 && !showSuccessModal) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
@@ -260,6 +270,46 @@ const Checkout = () => {
           </Card>
         </div>
       </div>
+
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-md">
+          {showSuccessModal && (
+            <Confetti
+              width={typeof window !== "undefined" ? window.innerWidth : 400}
+              height={typeof window !== "undefined" ? window.innerHeight : 600}
+              recycle={false}
+              numberOfPieces={200}
+            />
+          )}
+          <DialogHeader>
+            <DialogTitle className="text-center">
+              <div className="flex flex-col items-center space-y-2">
+                <CheckCircle className="w-16 h-16 text-green-500" />
+                <span className="text-2xl font-bold">
+                  Order Placed Successfully!
+                </span>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center space-y-4 py-4">
+            <p className="text-muted-foreground">
+              Your order has been placed successfully. You will receive a
+              confirmation email shortly.
+            </p>
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+              <p className="text-green-800 dark:text-green-200 font-medium">
+                🎉 Thank you for your order!
+              </p>
+              <p className="text-green-600 dark:text-green-300 text-sm mt-1">
+                We'll prepare your items for delivery right away.
+              </p>
+            </div>
+          </div>
+          <Button onClick={handleContinue} className="w-full" size="lg">
+            Continue to Dashboard
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
