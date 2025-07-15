@@ -27,6 +27,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader,
+  MapPin,
+  Phone,
+  Globe,
+  BadgeCheck,
+  User,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -404,6 +409,88 @@ export default function ProductPage() {
               <span>Quality guaranteed</span>
             </div>
           </div>
+
+          {/* Farmer Information */}
+          {product.seller && (
+            <div className="border-t pt-6">
+              <h3 className="font-medium mb-4">Sold by</h3>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-4">
+                    <div className="relative">
+                      <Avatar className="w-16 h-16">
+                        <AvatarImage
+                          src={
+                            product.farmerProfile?.avatar ||
+                            product.seller.image ||
+                            ""
+                          }
+                        />
+                        <AvatarFallback>
+                          {(product.seller?.name || "")
+                            .split(" ")
+                            .map((n: string) => n[0])
+                            .join("") || "F"}
+                        </AvatarFallback>
+                      </Avatar>
+                      {product.farmerProfile?.verified && (
+                        <BadgeCheck className="w-5 h-5 text-blue-600 absolute -top-1 -right-1" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-medium">
+                          {product.farmerProfile?.farmName ||
+                            product.seller?.name}
+                        </h4>
+                        {product.farmerProfile?.verified && (
+                          <Badge variant="secondary" className="text-xs">
+                            Verified
+                          </Badge>
+                        )}
+                      </div>
+                      {product.farmerProfile?.location && (
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                          <MapPin className="w-3 h-3" />
+                          <span>{product.farmerProfile.location}</span>
+                        </div>
+                      )}
+                      {product.farmerProfile?.description && (
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          {product.farmerProfile.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-4">
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={`/shop/farmers/${product.sellerId}`}>
+                            <User className="w-4 h-4 mr-2" />
+                            View Profile
+                          </Link>
+                        </Button>
+                        {product.farmerProfile?.phone && (
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Phone className="w-3 h-3" />
+                            <span>{product.farmerProfile.phone}</span>
+                          </div>
+                        )}
+                        {product.farmerProfile?.website && (
+                          <a
+                            href={product.farmerProfile.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                          >
+                            <Globe className="w-3 h-3" />
+                            <span>Website</span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
 

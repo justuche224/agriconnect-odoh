@@ -250,30 +250,43 @@ export const shopRouter = {
             id: categories.id,
             name: categories.name,
           },
+          seller: {
+            id: sql<string>`"user"."id"`,
+            name: sql<string>`"user"."name"`,
+            email: sql<string>`"user"."email"`,
+            image: sql<string>`"user"."image"`,
+          },
         })
         .from(products)
         .leftJoin(categories, eq(products.categoryId, categories.id))
+        .leftJoin(sql`"user"`, eq(products.sellerId, sql`"user"."id"`))
         .where(eq(products.id, input.id));
 
       if (!product) {
         throw new Error("Product not found");
       }
 
-      const [productImagesData, productVariantsData] = await Promise.all([
-        db
-          .select()
-          .from(productImages)
-          .where(eq(productImages.productId, input.id)),
-        db
-          .select()
-          .from(productVariants)
-          .where(eq(productVariants.productId, input.id)),
-      ]);
+      const [productImagesData, productVariantsData, farmerProfileData] =
+        await Promise.all([
+          db
+            .select()
+            .from(productImages)
+            .where(eq(productImages.productId, input.id)),
+          db
+            .select()
+            .from(productVariants)
+            .where(eq(productVariants.productId, input.id)),
+          db
+            .select()
+            .from(farmerProfiles)
+            .where(eq(farmerProfiles.userId, product.sellerId)),
+        ]);
 
       return {
         ...product,
         images: productImagesData,
         variants: productVariantsData,
+        farmerProfile: farmerProfileData[0] || null,
       };
     }),
 
@@ -409,9 +422,9 @@ export const shopRouter = {
           verified: reviews.verified,
           createdAt: reviews.createdAt,
           user: {
-            id: sql`"user"."id"`,
-            name: sql`"user"."name"`,
-            image: sql`"user"."image"`,
+            id: sql<string>`"user"."id"`,
+            name: sql<string>`"user"."name"`,
+            image: sql<string>`"user"."image"`,
           },
         })
         .from(reviews)
@@ -829,9 +842,9 @@ export const shopRouter = {
             createdAt: orders.createdAt,
           },
           customer: {
-            id: sql`"user"."id"`,
-            name: sql`"user"."name"`,
-            email: sql`"user"."email"`,
+            id: sql<string>`"user"."id"`,
+            name: sql<string>`"user"."name"`,
+            email: sql<string>`"user"."email"`,
           },
         })
         .from(orderItems)
@@ -847,12 +860,119 @@ export const shopRouter = {
     }),
 
   // Farmer Profile
+  getFarmers: publicProcedure
+    .input(
+      z.object({
+        page: z.number().default(1),
+        limit: z.number().max(50).default(12),
+        search: z.string().optional(),
+        location: z.string().optional(),
+        verified: z.boolean().optional(),
+      })
+    )
+    .handler(async ({ input }) => {
+      const offset = (input.page - 1) * input.limit;
+
+      let query = db
+        .select({
+          id: farmerProfiles.id,
+          userId: farmerProfiles.userId,
+          farmName: farmerProfiles.farmName,
+          description: farmerProfiles.description,
+          location: farmerProfiles.location,
+          phone: farmerProfiles.phone,
+          website: farmerProfiles.website,
+          certifications: farmerProfiles.certifications,
+          avatar: farmerProfiles.avatar,
+          banner: farmerProfiles.banner,
+          verified: farmerProfiles.verified,
+          createdAt: farmerProfiles.createdAt,
+          user: {
+            id: sql<string>`"user"."id"`,
+            name: sql<string>`"user"."name"`,
+            email: sql<string>`"user"."email"`,
+            image: sql<string>`"user"."image"`,
+          },
+        })
+        .from(farmerProfiles)
+        .leftJoin(sql`"user"`, eq(farmerProfiles.userId, sql`"user"."id"`))
+        .$dynamic();
+
+      // Apply filters
+      if (input.search) {
+        query = query.where(
+          sql`${
+            farmerProfiles.farmName
+          } ILIKE ${`%${input.search}%`} OR ${sql`"user"."name"`} ILIKE ${`%${input.search}%`}`
+        );
+      }
+      if (input.location) {
+        query = query.where(
+          ilike(farmerProfiles.location, `%${input.location}%`)
+        );
+      }
+      if (input.verified !== undefined) {
+        query = query.where(eq(farmerProfiles.verified, input.verified));
+      }
+
+      const items = await query
+        .orderBy(desc(farmerProfiles.createdAt))
+        .limit(input.limit)
+        .offset(offset);
+
+      // Get product counts for each farmer
+      const farmerIds = items.map((item) => item.userId);
+      const productCounts = await db
+        .select({
+          sellerId: products.sellerId,
+          count: sql<number>`count(*)`,
+        })
+        .from(products)
+        .where(inArray(products.sellerId, farmerIds))
+        .groupBy(products.sellerId);
+
+      const itemsWithCounts = items.map((item) => ({
+        ...item,
+        productCount:
+          productCounts.find((p) => p.sellerId === item.userId)?.count || 0,
+      }));
+
+      return {
+        items: itemsWithCounts,
+        pagination: {
+          page: input.page,
+          limit: input.limit,
+          hasMore: items.length === input.limit,
+        },
+      };
+    }),
+
   getFarmerProfile: publicProcedure
     .input(z.object({ userId: z.string() }))
     .handler(async ({ input }) => {
-      let [profile] = await db
-        .select()
+      const [profile] = await db
+        .select({
+          id: farmerProfiles.id,
+          userId: farmerProfiles.userId,
+          farmName: farmerProfiles.farmName,
+          description: farmerProfiles.description,
+          location: farmerProfiles.location,
+          phone: farmerProfiles.phone,
+          website: farmerProfiles.website,
+          certifications: farmerProfiles.certifications,
+          avatar: farmerProfiles.avatar,
+          banner: farmerProfiles.banner,
+          verified: farmerProfiles.verified,
+          createdAt: farmerProfiles.createdAt,
+          user: {
+            id: sql<string>`"user"."id"`,
+            name: sql<string>`"user"."name"`,
+            email: sql<string>`"user"."email"`,
+            image: sql<string>`"user"."image"`,
+          },
+        })
         .from(farmerProfiles)
+        .leftJoin(sql`"user"`, eq(farmerProfiles.userId, sql`"user"."id"`))
         .where(eq(farmerProfiles.userId, input.userId));
 
       // If no profile exists, create a default one
@@ -860,7 +980,7 @@ export const shopRouter = {
         const profileId = crypto.randomUUID();
         const now = new Date();
 
-        [profile] = await db
+        const [newProfile] = await db
           .insert(farmerProfiles)
           .values({
             id: profileId,
@@ -878,6 +998,17 @@ export const shopRouter = {
             updatedAt: now,
           })
           .returning();
+
+        // Get user data
+        const [userData] = await db
+          .select()
+          .from(sql`"user"`)
+          .where(eq(sql`"user"."id"`, input.userId));
+
+        return {
+          ...newProfile,
+          user: userData,
+        };
       }
 
       return profile;

@@ -13,6 +13,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
+import UserMenu from "@/components/user-menu";
 
 const items = [
   {
@@ -58,6 +59,7 @@ const AppSidebar = () => {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        <UserMenu />
       </SidebarContent>
     </Sidebar>
   );

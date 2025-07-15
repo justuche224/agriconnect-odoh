@@ -8,7 +8,10 @@ import Cart from "./cart";
 import { ShoppingCart } from "lucide-react";
 
 export default function Header() {
-  const links = [{ to: "/shop", label: "Shop" }];
+  const links = [
+    { to: "/shop", label: "Shop" },
+    { to: "/shop/farmers", label: "Farmers" },
+  ];
   const pathname = usePathname();
 
   if (pathname.includes("/dashboard") || pathname.includes("/admin")) {
@@ -19,7 +22,7 @@ export default function Header() {
     <div>
       <div className="flex flex-row items-center justify-between px-2 py-2 fixed top-0 left-0 right-0 z-50 bg-background/50 backdrop-blur-lg shadow-md">
         <nav className="flex gap-4 text-lg">
-          <Link href="/" className="font-bold text-xl">
+          <Link href="/" className="font-bold text-xl max-md:hidden">
             AGRICONNECT
           </Link>
           {links.map(({ to, label }) => {
